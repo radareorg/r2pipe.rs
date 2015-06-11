@@ -1,0 +1,1 @@
+initSidebarItems({"macro":[["open_pipe!",""]],"mod":[["r2pipe","Provides functionality to connect with radare2."]]});

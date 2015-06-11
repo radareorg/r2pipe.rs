@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `r2pipe` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, r2pipe">
+
+    <title>r2pipe - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'r2pipe', ty: 'mod', relpath: '../'};</script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>r2pipe</a><wbr></span><span class='out-of-band'><a href='stability.html'>[stability]</a> <span id='render-detail'>
+            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-0' href='../src/r2pipe/lib.rs.html#1-45'>[src]</a></span></h1>
+<div class='docblock'><p>R2Pipe provides functions to interact with <a href="http://rada.re/r/">radare2</a></p>
+
+<p>Hence this requires you to have radare2 installed on you system. For more information please
+refer to the official <a href="https://github.com/radare/radare2">radare2 Repository</a>.
+The module spawns an instance of r2 and communicates with it over pipes. Using commands which
+produce a JSON output is recommended as it is easier to parse.</p>
+
+<p>R2Pipes are available for a several of languages. For more information about r2pipes in general head over to the
+<a href="https://github.com/radare/radare2/wiki/R2PipeAPI">wiki</a>.</p>
+
+<h1 id="design" class='section-header'><a
+                           href="#design">Design</a></h1>
+<p>All the functionality for the crate are exposed through two structs: <code>R2PipeLang</code> and
+<code>R2PipeSpawn</code>. Typically, there are two ways to invoke r2pipe. One by spawning a child-process
+from inside r2 and second by making the program spawn a child r2process.
+<code>enum R2Pipe</code> is provided to allow easier use of the library and abstract the difference between these two methods.
+The <code>macro open_pipe!()</code> determines which of the two methods to use.</p>
+
+<p><strong>Note:</strong> For the second method,
+the path of the executable to be analyzed must be provided, while this is implicit in the first
+method (executable loaded by r2).</p>
+
+<h1 id="example" class='section-header'><a
+                           href="#example">Example</a></h1><pre id='rust-example-rendered' class='rust '>
+<span class='attribute'>#[<span class='ident'>macro_use</span>]</span>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>r2pipe</span>;
+<span class='kw'>use</span> <span class='ident'>r2pipe</span>::<span class='ident'>R2Pipe</span>;
+<span class='kw'>fn</span> <span class='ident'>main</span>() {
+    <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>r2p</span> <span class='op'>=</span> <span class='macro'>open_pipe</span><span class='macro'>!</span>(<span class='string'>&quot;/bin/ls&quot;</span>).<span class='ident'>unwrap</span>();
+    <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;{}&quot;</span>, <span class='ident'>r2p</span>.<span class='ident'>cmd</span>(<span class='string'>&quot;?e Hello World&quot;</span>));
+    <span class='kw'>let</span> <span class='ident'>json</span> <span class='op'>=</span> <span class='ident'>r2p</span>.<span class='ident'>cmdj</span>(<span class='string'>&quot;ij&quot;</span>);
+    <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;{}&quot;</span>, <span class='ident'>json</span>.<span class='ident'>pretty</span>());
+    <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;ARCH {}&quot;</span>, <span class='ident'>json</span>.<span class='ident'>find_path</span>(<span class='kw-2'>&amp;</span>[<span class='string'>&quot;bin&quot;</span>,<span class='string'>&quot;arch&quot;</span>]).<span class='ident'>unwrap</span>());
+    <span class='ident'>r2p</span>.<span class='ident'>close</span>();
+}
+</pre>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use self::<a class='mod'
+                                            href='./r2pipe/index.html'>r2pipe</a>::<a class='enum' href='../r2pipe/r2pipe/enum.R2Pipe.html' title='r2pipe::r2pipe::R2Pipe'>R2Pipe</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='r2pipe/index.html'
+                               title='r2pipe::r2pipe'>r2pipe</a></td>
+                        <td class='docblock short'><p>Provides functionality to connect with radare2.</p>
+</td>
+                    </tr>
+                </table><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='macro' href='macro.open_pipe!.html'
+                               title='r2pipe::open_pipe!'>open_pipe!</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "r2pipe";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>

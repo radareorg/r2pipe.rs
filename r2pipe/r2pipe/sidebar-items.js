@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["R2PipeLang","File descriptors to the parent r2 process."],["R2PipeSpawn","Stores descriptors to the spawned r2 process."]],"enum":[["R2Pipe","Provides abstraction between the two invocation methods."]]});

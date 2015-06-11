@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="Source to the Rust file `src/lib.rs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang">
+
+    <title>lib.rs.html -- source</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content source"><pre class="line-numbers"><span id="1"> 1</span>
+<span id="2"> 2</span>
+<span id="3"> 3</span>
+<span id="4"> 4</span>
+<span id="5"> 5</span>
+<span id="6"> 6</span>
+<span id="7"> 7</span>
+<span id="8"> 8</span>
+<span id="9"> 9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+</pre><pre class='rust '>
+<span class='doccomment'>//! R2Pipe provides functions to interact with [radare2](http://rada.re/r/)</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! Hence this requires you to have radare2 installed on you system. For more information please</span>
+<span class='doccomment'>//! refer to the official [radare2 Repository](https://github.com/radare/radare2).</span>
+<span class='doccomment'>//! The module spawns an instance of r2 and communicates with it over pipes. Using commands which</span>
+<span class='doccomment'>//! produce a JSON output is recommended as it is easier to parse.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! R2Pipes are available for a several of languages. For more information about r2pipes in general head over to the</span>
+<span class='doccomment'>//! [wiki](https://github.com/radare/radare2/wiki/R2PipeAPI).</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! # Design</span>
+<span class='doccomment'>//! All the functionality for the crate are exposed through two structs: `R2PipeLang` and</span>
+<span class='doccomment'>//! `R2PipeSpawn`. Typically, there are two ways to invoke r2pipe. One by spawning a child-process</span>
+<span class='doccomment'>//! from inside r2 and second by making the program spawn a child r2process.</span>
+<span class='doccomment'>//! `enum R2Pipe` is provided to allow easier use of the library and abstract the difference between these two methods.</span>
+<span class='doccomment'>//! The `macro open_pipe!()` determines which of the two methods to use.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! **Note:** For the second method,</span>
+<span class='doccomment'>//! the path of the executable to be analyzed must be provided, while this is implicit in the first</span>
+<span class='doccomment'>//! method (executable loaded by r2).</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! # Example</span>
+<span class='doccomment'>//! ```no_run</span>
+<span class='doccomment'>//! #[macro_use]</span>
+<span class='doccomment'>//! extern crate r2pipe;</span>
+<span class='doccomment'>//! use r2pipe::R2Pipe;</span>
+<span class='doccomment'>//! fn main() {</span>
+<span class='doccomment'>//!     let mut r2p = open_pipe!(&quot;/bin/ls&quot;).unwrap();</span>
+<span class='doccomment'>//!     println!(&quot;{}&quot;, r2p.cmd(&quot;?e Hello World&quot;));</span>
+<span class='doccomment'>//!     let json = r2p.cmdj(&quot;ij&quot;);</span>
+<span class='doccomment'>//!     println!(&quot;{}&quot;, json.pretty());</span>
+<span class='doccomment'>//!     println!(&quot;ARCH {}&quot;, json.find_path(&amp;[&quot;bin&quot;,&quot;arch&quot;]).unwrap());</span>
+<span class='doccomment'>//!     r2p.close();</span>
+<span class='doccomment'>//! }</span>
+<span class='doccomment'>//! ```</span>
+
+<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>doc</span>(<span class='ident'>html_root_url</span> <span class='op'>=</span> <span class='string'>&quot;https://radare.github.io/r2pipe/&quot;</span>)]</span>
+
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>libc</span>;
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rustc_serialize</span>;
+
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>r2pipe</span>;
+
+<span class='comment'>// Rexport to bring it out one module.</span>
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>r2pipe</span>::<span class='ident'>R2Pipe</span>;
+</pre>
+</section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "r2pipe";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>
