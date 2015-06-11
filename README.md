@@ -2,6 +2,8 @@ r2pipe.rs
 =========
 
 The Rust Crate to interact with radare2.
+Please check [Documentation](https://radare.github.io/r2pipe.rs) to get
+started.
 
 
 TODO
