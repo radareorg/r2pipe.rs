@@ -13,6 +13,7 @@ use std::env;
 use std::str;
 use std::path::Path;
 use std::io::prelude::*;
+use std::io::BufReader;
 
 /// File descriptors to the parent r2 process.
 pub struct R2PipeLang {
@@ -22,7 +23,7 @@ pub struct R2PipeLang {
 
 /// Stores descriptors to the spawned r2 process.
 pub struct R2PipeSpawn {
-	read: process::ChildStdout,
+	read: BufReader<process::ChildStdout>,
 	write: process::ChildStdin,
 }
 
@@ -126,7 +127,7 @@ impl R2Pipe {
 		}
 
 		let _res = R2PipeSpawn {
-			read: sout,
+			read: BufReader::new(sout),
 			write: sin
 		};
 
@@ -140,27 +141,14 @@ impl R2PipeSpawn {
 		if let Err(e) = self.write.write(cmd_.as_bytes()) {
 			panic!("{}", e);
 		}
-		// Read in block size of 2048.
-		let mut s = [0; 2048];
-		let mut res: String = String::new();
-
-		loop { 
-			let count = self.read.read(&mut s).unwrap();
-			for c in s[..count].iter() {
-				res = res + &*format!("{}", *c as char);
-			}
-			if count < 2048 {
-				break;
-			}
-		}
-
-		let len = res.len() - 1;
-		res.truncate(len);
-		res
+		let mut res: Vec<u8> = Vec::new();
+		self.read.read_until(0u8, &mut res).unwrap();
+		let res_without_zero = &res[..res.len()-1];
+		String::from(str::from_utf8(res_without_zero).unwrap())
 	}
 
 	pub fn cmdj(&mut self, cmd: &str) -> Json {
-		let res = &self.cmd(cmd).replace("\n","");
+		let res = &self.cmd(cmd); //.replace("\n","");
 		Json::from_str(res).unwrap()
 	}
 
