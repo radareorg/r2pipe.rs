@@ -17,10 +17,6 @@ readme = "README.md"
 # License information
 license = "MIT"
 
-[dependencies.libc]
-doc = "false"
-libc = "*"
-
 [dependencies.rustc-serialize]
 doc = "false"
 rustc-serialize = "*"

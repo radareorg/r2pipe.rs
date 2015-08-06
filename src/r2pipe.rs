@@ -2,8 +2,7 @@
 //!
 //! Please check crate level documentation for more details and example.
 
-extern crate libc;
-use self::libc::{ c_void };
+use std::os::unix::io::FromRawFd;
 use rustc_serialize::json::Json;
 
 use std::process::Command;
@@ -12,13 +11,14 @@ use std::process;
 use std::env;
 use std::str;
 use std::path::Path;
+use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
 /// File descriptors to the parent r2 process.
 pub struct R2PipeLang {
-	fd_in: i32,
-	fd_out: i32
+	read: BufReader<File>,
+	write: File,
 }
 
 /// Stores descriptors to the spawned r2 process.
@@ -60,7 +60,10 @@ impl R2Pipe {
 			None => return Err("Pipe not open. Please run from r2"),
 		};
 
-		let _res = R2PipeLang { fd_in: fin, fd_out: fout };
+		let _res = unsafe { R2PipeLang {
+			read: BufReader::new(File::from_raw_fd(fin)),
+			write: File::from_raw_fd(fout)
+		}};
 		Ok(R2Pipe::Lang(_res))
 	}
 
@@ -138,9 +141,8 @@ impl R2Pipe {
 impl R2PipeSpawn {
 	pub fn cmd(&mut self, cmd: &str) -> String {
 		let cmd_ = cmd.to_owned() + "\n";
-		if let Err(e) = self.write.write(cmd_.as_bytes()) {
-			panic!("{}", e);
-		}
+		self.write.write(cmd_.as_bytes()).unwrap();
+
 		let mut res: Vec<u8> = Vec::new();
 		self.read.read_until(0u8, &mut res).unwrap();
 		let res_without_zero = &res[..res.len()-1];
@@ -159,26 +161,21 @@ impl R2PipeSpawn {
 
 impl R2PipeLang {
 	pub fn cmd(&mut self, cmd: &str) -> String {
-		let buf: [u8; 1024] = [0;1024];
-		unsafe {
-			libc::write (self.fd_out, cmd.as_ptr() as *const c_void, cmd.len() as u64);
-			libc::write (self.fd_out, "\x00".as_ptr() as *const c_void, 1);
-			let len = libc::read (self.fd_in, buf.as_ptr() as *mut c_void, buf.len() as u64) as usize;
-			let buf2 : Box<&[u8]> = Box::new(&buf[0..len-1]);
-			let s = str::from_utf8(&buf2).unwrap();
-			s.to_string()
-		}
+		self.write.write(cmd.as_bytes()).unwrap();
+
+		let mut res: Vec<u8> = Vec::new();
+		self.read.read_until(0u8, &mut res).unwrap();
+		let res_without_zero = &res[..res.len()-1];
+		String::from(str::from_utf8(res_without_zero).unwrap())
 	}
 
 	pub fn cmdj(&mut self, cmd: &str) -> Json {
-		let res = &self.cmd(cmd).replace("\n","");
+		let res = &self.cmd(cmd); //.replace("\n","");
 		Json::from_str(res).unwrap()
 	}
 
 	pub fn close(&mut self) {
-		unsafe {
-			libc::close (self.fd_in);
-			libc::close (self.fd_out);
-		}
+		// self.read.close();
+		// self.write.close();
 	}
 }

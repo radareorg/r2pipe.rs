@@ -36,7 +36,6 @@
 
 #![doc(html_root_url = "https://radare.github.io/r2pipe.rs/")]
 
-extern crate libc;
 extern crate rustc_serialize;
 
 pub mod r2pipe;
