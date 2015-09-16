@@ -26,7 +26,7 @@
 //! extern crate r2pipe;
 //! use r2pipe::R2Pipe;
 //! fn main() {
-//!     let path = Some("/bin/ls");
+//!     let path = Some("/bin/ls".to_owned());
 //!     let mut r2p = open_pipe!(path).unwrap();
 //!     println!("{}", r2p.cmd("?e Hello World"));
 //!     let json = r2p.cmdj("ij");
@@ -38,7 +38,6 @@
 
 #![doc(html_root_url = "https://radare.github.io/r2pipe.rs/")]
 
-extern crate libc;
 extern crate rustc_serialize;
 
 pub mod r2pipe;
