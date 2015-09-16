@@ -49,8 +49,13 @@ fn getenv(k: &str) -> i32 {
 
 #[macro_export]
 macro_rules! open_pipe {
-	($x:expr) => (R2Pipe::spawn($x));
-	() => (R2Pipe::open());
+	($x: expr) => {
+		match $x {
+			Some(path) => R2Pipe::spawn(path),
+			None => R2Pipe::open(),
+		}
+	}
+	//() => (R2Pipe::open());
 }
 
 impl R2Pipe {

@@ -3,7 +3,7 @@ extern crate r2pipe;
 use r2pipe::R2Pipe;
 
 fn main() {
-	let mut r2p = open_pipe!("/bin/ls").unwrap();
+	let mut r2p = open_pipe!(None).unwrap();
 	println!("{}", r2p.cmd("?e Hello World"));
 	let json = r2p.cmdj("ij");
 	println!("{}", json.pretty());

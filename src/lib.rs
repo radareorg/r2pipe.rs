@@ -17,6 +17,7 @@
 //!
 //! **Note:** For the second method,
 //! the path of the executable to be analyzed must be provided, while this is implicit in the first
+//! (pass `None`)
 //! method (executable loaded by r2).
 //!
 //! # Example
@@ -25,7 +26,8 @@
 //! extern crate r2pipe;
 //! use r2pipe::R2Pipe;
 //! fn main() {
-//!     let mut r2p = open_pipe!("/bin/ls").unwrap();
+//!     let path = Some("/bin/ls");
+//!     let mut r2p = open_pipe!(path).unwrap();
 //!     println!("{}", r2p.cmd("?e Hello World"));
 //!     let json = r2p.cmdj("ij");
 //!     println!("{}", json.pretty());
