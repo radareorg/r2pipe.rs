@@ -175,10 +175,7 @@ impl R2PipeSpawn {
 	}
 
 	pub fn close(&mut self) {
-		match self.cmd("q!") {
-			Ok(_) => (),
-			Err(_) => (),
-		}
+		let _ = self.cmd("q!");
 	}
 }
 
