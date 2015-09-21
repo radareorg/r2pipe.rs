@@ -36,15 +36,30 @@ pub enum R2Pipe {
 fn atoi(k: &str) -> i32 {
 	match k.parse::<i32>() {
 		Ok(val) => val,
-		Err(_) => 0
+		Err(_) => -1 
 	}
 }
 
 fn getenv(k: &str) -> i32 {
 	match env::var(k) {
 		Ok(val) => atoi(&val),
-		Err(_) => 0,
+		Err(_) => -1,
 	}
+}
+
+fn process_result(res:Vec<u8>) -> Result<String, String> {
+	let len = res.len();
+	let out = if len > 0 {
+		let res_without_zero = &res[..len-1];
+		if let Ok (utf8str) = str::from_utf8(res_without_zero) {
+			String::from(utf8str)
+		} else {
+			return Err("Failed".to_owned());
+		}
+	} else {
+		"".to_owned()
+	};
+	Ok(out)
 }
 
 #[macro_export]
@@ -63,22 +78,23 @@ impl R2Pipe {
 			Some(x) => x,
 			None => return Err("Pipe not open. Please run from r2"),
 		};
-
-		let _res = unsafe { R2PipeLang {
-			read: BufReader::new(File::from_raw_fd(fin)),
-			write: File::from_raw_fd(fout)
-		}};
+		let _res = unsafe {
+			R2PipeLang {
+				read: BufReader::new(File::from_raw_fd(fin)),
+				write: File::from_raw_fd(fout)
+			}
+		};
 		Ok(R2Pipe::Lang(_res))
 	}
 
-	pub fn cmd(&mut self, cmd: &str) -> String {
+	pub fn cmd(&mut self, cmd: &str) -> Result<String,String> {
 		match *self {
 			R2Pipe::Pipe(ref mut x) => x.cmd(cmd),
 			R2Pipe::Lang(ref mut x) => x.cmd(cmd),
 		}
 	}
 
-	pub fn cmdj(&mut self, cmd: &str) -> Json {
+	pub fn cmdj(&mut self, cmd: &str) -> Result<Json,String> {
 		match *self {
 			R2Pipe::Pipe(ref mut x) => x.cmdj(cmd),
 			R2Pipe::Lang(ref mut x) => x.cmdj(cmd),
@@ -96,11 +112,9 @@ impl R2Pipe {
 	pub fn in_session() -> Option<(i32, i32)> {
 		let fin = getenv("R2PIPE_IN");
 		let fout = getenv("R2PIPE_OUT");
-
-		if fin == 0 || fout == 0 {
+		if fin < 0 || fout < 0 {
 			return None;
 		}
-
 		return Some((fin, fout));
 	}
 
@@ -142,39 +156,43 @@ impl R2Pipe {
 }
 
 impl R2PipeSpawn {
-	pub fn cmd(&mut self, cmd: &str) -> String {
+	pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
 		let cmd_ = cmd.to_owned() + "\n";
-		self.write.write(cmd_.as_bytes()).unwrap();
+		if let Err(e) = self.write.write(cmd_.as_bytes()) {
+			return Err(e.to_string())
+		}
 
 		let mut res: Vec<u8> = Vec::new();
-		self.read.read_until(0u8, &mut res).unwrap();
-		let res_without_zero = &res[..res.len()-1];
-		String::from(str::from_utf8(res_without_zero).unwrap())
+		if let Err(e) = self.read.read_until(0u8, &mut res) {
+			return Err(e.to_string())
+		}
+		process_result (res)
 	}
 
-	pub fn cmdj(&mut self, cmd: &str) -> Json {
-		let res = &self.cmd(cmd); //.replace("\n","");
-		Json::from_str(res).unwrap()
+	pub fn cmdj(&mut self, cmd: &str) -> Result<Json,String> {
+		let res = &self.cmd(cmd).unwrap();
+		Ok(Json::from_str(res).unwrap())
 	}
 
 	pub fn close(&mut self) {
-		self.cmd("q!");
+		match self.cmd("q!") {
+			Ok(_) => (),
+			Err(_) => (),
+		}
 	}
 }
 
 impl R2PipeLang {
-	pub fn cmd(&mut self, cmd: &str) -> String {
+	pub fn cmd(&mut self, cmd: &str) -> Result<String,String> {
 		self.write.write(cmd.as_bytes()).unwrap();
-
 		let mut res: Vec<u8> = Vec::new();
 		self.read.read_until(0u8, &mut res).unwrap();
-		let res_without_zero = &res[..res.len()-1];
-		String::from(str::from_utf8(res_without_zero).unwrap())
+		process_result (res)
 	}
 
-	pub fn cmdj(&mut self, cmd: &str) -> Json {
-		let res = &self.cmd(cmd); //.replace("\n","");
-		Json::from_str(res).unwrap()
+	pub fn cmdj(&mut self, cmd: &str) -> Result<Json,String> {
+		let res = try!(self.cmd(cmd));
+		Ok(Json::from_str(&res).unwrap())
 	}
 
 	pub fn close(&mut self) {
