@@ -5,6 +5,7 @@
 use std::os::unix::io::FromRawFd;
 use rustc_serialize::json::Json;
 
+use libc;
 use std::process::Command;
 use std::process::Stdio;
 use std::process;
@@ -79,9 +80,11 @@ impl R2Pipe {
 			None => return Err("Pipe not open. Please run from r2"),
 		};
 		let _res = unsafe {
+			/* dup file descriptors to avoid from_raw_fd ownership issue */
+			let (din, dout) = (libc::dup(fin), libc::dup(fout));
 			R2PipeLang {
-				read: BufReader::new(File::from_raw_fd(fin)),
-				write: File::from_raw_fd(fout)
+				read: BufReader::new(File::from_raw_fd(din)),
+				write: File::from_raw_fd(dout)
 			}
 		};
 		Ok(R2Pipe::Lang(_res))
@@ -120,8 +123,10 @@ impl R2Pipe {
 
 	/// Creates a new R2PipeSpawn.
 	pub fn spawn(name: String) -> Result<R2Pipe, &'static str> {
-		if let Some(_) = R2Pipe::in_session() {
-			return R2Pipe::open();
+		if name == "" {
+			if let Some(_) = R2Pipe::in_session() {
+				return R2Pipe::open();
+			}
 		}
 
 		let path = Path::new(&*name);
@@ -135,16 +140,12 @@ impl R2Pipe {
 				Err(_) => return Err("Unable to spawn r2."),
 			};
 
-		let sin: process::ChildStdin;
-		let mut sout: process::ChildStdout;
+		let sin = child.stdin.unwrap();
+		let mut sout = child.stdout.unwrap();
 
-		{
-			sin = child.stdin.unwrap();
-			sout = child.stdout.unwrap();
-			// flush out the initial null byte.
-			let mut w = [0;1];
-			sout.read(&mut w).unwrap();
-		}
+		// flush out the initial null byte.
+		let mut w = [0;1];
+		sout.read(&mut w).unwrap();
 
 		let _res = R2PipeSpawn {
 			read: BufReader::new(sout),
@@ -169,7 +170,7 @@ impl R2PipeSpawn {
 		process_result (res)
 	}
 
-	pub fn cmdj(&mut self, cmd: &str) -> Result<Json,String> {
+	pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
 		let res = &self.cmd(cmd).unwrap();
 		Ok(Json::from_str(res).unwrap())
 	}
@@ -180,14 +181,14 @@ impl R2PipeSpawn {
 }
 
 impl R2PipeLang {
-	pub fn cmd(&mut self, cmd: &str) -> Result<String,String> {
+	pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
 		self.write.write(cmd.as_bytes()).unwrap();
 		let mut res: Vec<u8> = Vec::new();
 		self.read.read_until(0u8, &mut res).unwrap();
 		process_result (res)
 	}
 
-	pub fn cmdj(&mut self, cmd: &str) -> Result<Json,String> {
+	pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
 		let res = try!(self.cmd(cmd));
 		Ok(Json::from_str(&res).unwrap())
 	}
