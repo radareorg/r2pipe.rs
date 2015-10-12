@@ -28,27 +28,28 @@ impl R2PipeAsync {
 		}
 	}
 
-	pub fn cmd(&mut self, str: &'static str, cb: &'static Fn(String)) {
-		self.cbs.insert(0, Arc::new(cb));
+	pub fn cmd(&mut self, str: &'static str, cb: Arc<Fn(String)>) {
+		self.cbs.insert(0, cb);
 		self.tx.send(str.to_string()).unwrap();
 	}
-	pub fn end(&mut self) {
+
+	pub fn quit(&mut self) {
 		self.tx.send("q".to_string()).unwrap();
 	}
 
-	pub fn mainloop<'a>(mut self) {
-		// XXX: cant borrow the receiver
-		//let child_rx = &'a mut self.rx;
-		let mut child_tx = self.tx2.clone();
+	pub fn mainloop(mut self) {
+		let child_rx = self.rx;
+		let child_tx = self.tx2.clone();
 		let child = thread::spawn(move|| {
 			let mut r2p = match R2Pipe::in_session() {
 				Some (_) => R2Pipe::open(),
 				None => R2Pipe::spawn(FILENAME.to_owned())
 			}.unwrap();
 			loop {
-				//let msg = self.rx.recv().unwrap();
-				let msg = "pop";
+				let msg = child_rx.recv().unwrap();
 				if msg == "q" {
+					// push a result without callback
+					child_tx.send("".to_owned()).unwrap();
 					drop(child_tx);
 					break;
 				}
@@ -60,15 +61,17 @@ impl R2PipeAsync {
 
 		/* main loop */
 		loop {
-			let r = self.rx2.recv();
-			if r.is_err () {
+			let msg = self.rx2.recv();
+			if msg.is_ok() {
+				let res = msg.unwrap();
+				if let Some(cb) = self.cbs.pop() {
+					cb(res.trim().to_string());
+				} else {
+					break;
+				}
+			} else {
 				break;
 			}
-			let res = r.unwrap();
-
-			println!("---> RES {}", res);
-			let cb = self.cbs.pop().unwrap();
-			cb (res);
 		}
 		child.join().unwrap();
 	}
@@ -76,18 +79,12 @@ impl R2PipeAsync {
 
 fn main() {
 	let mut r2pa = R2PipeAsync::open ();
-// XXX: cant pass the closure
-/*
-async.rs:79:21: 81:3 error: mismatched types:
- expected `&'static core::ops::Fn(collections::string::String) + 'static`,
-    found `[closure@async.rs:79:21: 81:3]`
-
-	r2pa.cmd("?e One", |x| {
+	r2pa.cmd("?e One", Arc::new(|x| {
 		println!("One: {}", x);
-	});
-	r2pa.cmd("?e Two", |x| {
+	}));
+	r2pa.cmd("?e Two", Arc::new(|x| {
 		println!("Two: {}", x);
-	});
-*/
+	}));
+	r2pa.quit();
 	r2pa.mainloop();
 }
