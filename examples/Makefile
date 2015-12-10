@@ -1,8 +1,11 @@
-all: main quit
+all: main quit brokenpipe
 
 main:
 	rustc -L ../target/debug/ -L ../target/debug/deps main.rs 
 	r2 -qc '#!pipe ./main' /bin/ls
+
+brokenpipe:
+	rustc -L ../target/debug/ -L ../target/debug/deps brokenpipe.rs
 
 async:
 	rustc -L ../target/debug/ -L ../target/debug/deps async.rs
@@ -13,4 +16,4 @@ quit:
 	rustc -L ../target/debug/ -L ../target/debug/deps quit.rs 
 	r2 -qc '#!pipe ./quit' /bin/ls
 
-.PHONY: main quit async
+.PHONY: main quit async brokenpipe

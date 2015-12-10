@@ -171,8 +171,18 @@ impl R2PipeSpawn {
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
-        let res = &self.cmd(cmd).unwrap();
-        Ok(Json::from_str(res).unwrap())
+        if let Ok(res) = self.cmd(cmd) {
+            if res == "" {
+                return Err("Empty JSON".to_string());
+            }
+            if let Ok(jstr) = Json::from_str(&res) {
+                Ok(jstr)
+            } else {
+                Err(format!("Invalid JSON for {} ({})", cmd, res))
+            }
+        } else {
+            Err("oops cmd".to_string())
+        }
     }
 
     pub fn close(&mut self) {
