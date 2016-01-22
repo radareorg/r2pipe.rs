@@ -18,7 +18,7 @@ keywords = ["r2", "debugger", "hex" , "editor", "radare"]
 readme = "README.md"
 
 # License information
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies.rustc-serialize]
 doc = "false"
