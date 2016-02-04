@@ -8,22 +8,23 @@
 //! Basic structs for JSON encoding and decoding.
 use rustc_serialize::{Decodable, Decoder};
 
-#[derive(RustcEncodable, Debug, Clone)]
+#[derive(RustcEncodable, Debug, Clone, Default)]
 pub struct LOpInfo {
     pub esil: Option<String>,
     pub offset: Option<u64>,
     pub opcode: Option<String>,
     pub optype: Option<String>,
+    pub size: Option<u64>,
 }
 
-#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone, Default)]
 pub struct LFunctionInfo {
     pub addr: Option<u64>,
     pub name: Option<String>,
     pub ops: Option<Vec<LOpInfo>>,
 }
 
-#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone, Default)]
 pub struct LRegInfo {
     pub alias_info: Vec<LAliasInfo>,
     pub reg_info: Vec<LRegProfile>,
@@ -76,6 +77,7 @@ impl Decodable for LOpInfo {
                 offset: d_.read_struct_field("offset", 0, |d| Decodable::decode(d)).ok(),
                 opcode: d_.read_struct_field("opcode", 0, |d| Decodable::decode(d)).ok(),
                 optype: d_.read_struct_field("type", 0, |d| Decodable::decode(d)).ok(),
+                size: d_.read_struct_field("size", 0, |d| Decodable::decode(d)).ok(),
             };
 
             Ok(op)
