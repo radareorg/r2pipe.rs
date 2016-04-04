@@ -20,9 +20,13 @@ readme = "README.md"
 # License information
 license = "MIT OR Apache-2.0"
 
+[features]
+default = []
+
 [dependencies.rustc-serialize]
 doc = "false"
 rustc-serialize = "*"
 
 [dependencies]
 libc = "*"
+clippy = {version = "0.0.61", optional = true}

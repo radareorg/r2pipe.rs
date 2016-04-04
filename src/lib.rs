@@ -46,6 +46,10 @@
 
 #![doc(html_root_url = "https://radare.github.io/r2pipe.rs/")]
 
+// Support for extra lints for clippy
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 extern crate libc;
 extern crate rustc_serialize;
 
