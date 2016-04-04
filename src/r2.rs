@@ -123,7 +123,7 @@ impl R2 {
         let n = n.unwrap_or(16);
         let offset: &str = offset.unwrap_or_default();
         let mut cmd = format!("pdj{}", n);
-        if offset.len() > 0 {
+        if !offset.is_empty() {
             cmd = format!("{} @ {}", cmd, offset);
         }
         self.send(&*cmd);

@@ -1,4 +1,4 @@
-//! R2Pipe provides functions to interact with [radare2](http://rada.re/r/)
+//! `R2Pipe` provides functions to interact with [radare2](http://rada.re/r/)
 //!
 //! Hence this requires you to have radare2 installed on you system. For more
 //! information refer to the r2 [repository](https://github.com/radare/radare2).
@@ -6,7 +6,7 @@
 //! Using commands which produce a JSON output is recommended and easier to
 //! parse.
 //!
-//! R2Pipes are available for a several of languages. For more information
+//! `R2Pipe`s are available for a several of languages. For more information
 //! about r2pipes in general head over to the
 //! [wiki](https://github.com/radare/radare2/wiki/R2PipeAPI).
 //!

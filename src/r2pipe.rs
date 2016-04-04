@@ -75,19 +75,19 @@ macro_rules! open_pipe {
 
 impl R2Pipe {
     pub fn open() -> Result<R2Pipe, &'static str> {
-        let (fin, fout) = match R2Pipe::in_session() {
+        let (f_in, f_out) = match R2Pipe::in_session() {
             Some(x) => x,
             None => return Err("Pipe not open. Please run from r2"),
         };
-        let _res = unsafe {
+        let res = unsafe {
             // dup file descriptors to avoid from_raw_fd ownership issue
-            let (din, dout) = (libc::dup(fin), libc::dup(fout));
+            let (d_in, d_out) = (libc::dup(f_in), libc::dup(f_out));
             R2PipeLang {
-                read: BufReader::new(File::from_raw_fd(din)),
-                write: File::from_raw_fd(dout),
+                read: BufReader::new(File::from_raw_fd(d_in)),
+                write: File::from_raw_fd(d_out),
             }
         };
-        Ok(R2Pipe::Lang(_res))
+        Ok(R2Pipe::Lang(res))
     }
 
     pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
@@ -113,12 +113,12 @@ impl R2Pipe {
 
     // XXX: must support windows
     pub fn in_session() -> Option<(i32, i32)> {
-        let fin = getenv("R2PIPE_IN");
-        let fout = getenv("R2PIPE_OUT");
-        if fin < 0 || fout < 0 {
+        let f_in = getenv("R2PIPE_IN");
+        let f_out = getenv("R2PIPE_OUT");
+        if f_in < 0 || f_out < 0 {
             return None;
         }
-        return Some((fin, fout));
+        Some((f_in, f_out))
     }
 
     /// Creates a new R2PipeSpawn.
@@ -147,12 +147,12 @@ impl R2Pipe {
         let mut w = [0; 1];
         sout.read(&mut w).unwrap();
 
-        let _res = R2PipeSpawn {
+        let res = R2PipeSpawn {
             read: BufReader::new(sout),
             write: sin,
         };
 
-        Ok(R2Pipe::Pipe(_res))
+        Ok(R2Pipe::Pipe(res))
     }
 }
 
