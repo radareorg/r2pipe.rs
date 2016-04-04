@@ -31,6 +31,12 @@ pub struct R2 {
     readin: String,
 }
 
+impl Default for R2 {
+    fn default() -> R2 {
+        R2::new(None).expect("Unable to spawn r2 or find an open r2pipe")
+    }
+}
+
 // fn send and recv allow users to send their own commands,
 // i.e. The ones that are not currently abstracted by the R2 API.
 // Ideally, all commonly used commands must be supported for easier use.
