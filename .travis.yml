@@ -4,6 +4,10 @@ os:
   - linux
   - osx
 
+cache:
+  - ccache
+  - apt
+
 language: rust
 
 rust: stable
