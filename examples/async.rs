@@ -44,10 +44,10 @@ impl R2PipeAsync {
         let child_tx = self.tx2.clone();
         let child = thread::spawn(move || {
             let mut r2p = match R2Pipe::in_session() {
-                              Some(_) => R2Pipe::open(),
-                              None => R2Pipe::spawn(FILENAME.to_owned()),
-                          }
-                          .unwrap();
+                    Some(_) => R2Pipe::open(),
+                    None => R2Pipe::spawn(FILENAME.to_owned()),
+                }
+                .unwrap();
             loop {
                 let msg = child_rx.recv().unwrap();
                 if msg == "q" {

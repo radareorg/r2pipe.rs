@@ -5,10 +5,10 @@ use r2pipe::R2Pipe;
 fn main() {
     // let mut r2p = open_pipe!(None).unwrap();
     let mut r2p = match R2Pipe::in_session() {
-                      Some(_) => R2Pipe::open(),
-                      None => R2Pipe::spawn("/bin/ls".to_owned()),
-                  }
-                  .unwrap();
+            Some(_) => R2Pipe::open(),
+            None => R2Pipe::spawn("/bin/ls".to_owned()),
+        }
+        .unwrap();
 
     println!("{}", r2p.cmd("?e Hello World").unwrap());
 
