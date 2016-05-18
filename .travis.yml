@@ -1,0 +1,20 @@
+# travis.yml for testing r2pipe.rs. Initially written in 2016, by pancake.
+
+os:
+  - linux
+  - osx
+
+language: rust
+
+rust: stable
+
+sudo: false
+
+script:
+  - cargo build
+  - cargo test
+
+notifications:
+  irc: "chat.freenode.net#radare"
+  on_success: never
+  on_failure: always
