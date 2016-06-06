@@ -111,7 +111,6 @@ impl R2Pipe {
         }
     }
 
-    // XXX: must support windows
     pub fn in_session() -> Option<(i32, i32)> {
         let f_in = getenv("R2PIPE_IN");
         let f_out = getenv("R2PIPE_OUT");
@@ -119,6 +118,14 @@ impl R2Pipe {
             return None;
         }
         Some((f_in, f_out))
+    }
+
+    #[cfg(windows)]
+    pub fn in_windows_session() -> bool {
+        match env::var("R2PIPE_PATH") {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 
     /// Creates a new R2PipeSpawn.
