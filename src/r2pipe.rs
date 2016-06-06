@@ -121,10 +121,10 @@ impl R2Pipe {
     }
 
     #[cfg(windows)]
-    pub fn in_windows_session() -> bool {
+    pub fn in_windows_session() -> Option<String> {
         match env::var("R2PIPE_PATH") {
-            Ok(_) => true,
-            Err(_) => false,
+            Ok(val) => Some(format!("\\\\.\\pipe\\{}", val)),
+            Err(_) => None,
         }
     }
 
