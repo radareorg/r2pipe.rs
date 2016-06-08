@@ -1,3 +1,4 @@
 format_strings = true
 reorder_imports = true
 take_source_hints = false
+struct_lit_multiline_style = "ForceMulti"

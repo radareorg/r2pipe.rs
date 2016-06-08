@@ -45,7 +45,7 @@ impl R2PipeAsync {
         let child = thread::spawn(move || {
             let mut r2p = match R2Pipe::in_session() {
                     Some(_) => R2Pipe::open(),
-                    None => R2Pipe::spawn(FILENAME.to_owned()),
+                    None => R2Pipe::spawn(FILENAME.to_owned(), None),
                 }
                 .unwrap();
             loop {

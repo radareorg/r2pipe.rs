@@ -28,6 +28,12 @@ pub struct R2PipeSpawn {
     write: process::ChildStdin,
 }
 
+#[derive(Default)]
+pub struct R2PipeSpawnOptions {
+    pub exepath: String,
+    pub args: Vec<&'static str>,
+}
+
 /// Provides abstraction between the two invocation methods.
 pub enum R2Pipe {
     Pipe(R2PipeSpawn),
@@ -65,10 +71,19 @@ fn process_result(res: Vec<u8>) -> Result<String, String> {
 
 #[macro_export]
 macro_rules! open_pipe {
+	() => {
+            R2Pipe::open(),
+        };
 	($x: expr) => {
 		match $x {
-			Some(path) => R2Pipe::spawn(path),
+			Some(path) => R2Pipe::spawn(path, None),
 			None => R2Pipe::open(),
+		}
+	};
+	($x: expr, $y: expr) => {
+		match $x $y {
+			Some(path, opts) => R2Pipe::spawn(path, opts),
+			(None, None) => R2Pipe::open(),
 		}
 	}
 }
@@ -129,20 +144,29 @@ impl R2Pipe {
     }
 
     /// Creates a new R2PipeSpawn.
-    pub fn spawn(name: String) -> Result<R2Pipe, &'static str> {
+    pub fn spawn(name: String, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe, &'static str> {
         if name == "" {
             if let Some(_) = R2Pipe::in_session() {
                 return R2Pipe::open();
             }
         }
 
+        let exepath = match opts {
+            Some(ref opt) => opt.exepath.clone(),
+            _ => "r2".to_owned(),
+        };
+        let args = match opts {
+            Some(ref opt) => opt.args.clone(),
+            _ => vec![],
+        };
         let path = Path::new(&*name);
-        let child = match Command::new("r2")
-                              .arg("-q0")
-                              .arg(path)
-                              .stdin(Stdio::piped())
-                              .stdout(Stdio::piped())
-                              .spawn() {
+        let child = match Command::new(exepath)
+            .arg("-q0")
+            .args(&args)
+            .arg(path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn() {
             Ok(c) => c,
             Err(_) => return Err("Unable to spawn r2."),
         };

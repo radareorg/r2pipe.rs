@@ -59,5 +59,6 @@ pub mod r2;
 pub mod structs;
 
 // Rexport to bring it out one module.
+pub use self::r2pipe::R2PipeSpawnOptions;
 pub use self::r2pipe::R2Pipe;
 pub use self::r2::R2;

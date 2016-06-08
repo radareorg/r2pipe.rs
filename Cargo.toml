@@ -1,6 +1,6 @@
 [package]
 name = "r2pipe"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
   "pancake <pancake@nopcode.org>",
   "sushant94 <sushant.dinesh94@gmail.com>"
