@@ -59,7 +59,7 @@ fn process_result(res: Vec<u8>) -> Result<String, String> {
     let out = if len > 0 {
         let res_without_zero = &res[..len - 1];
         if let Ok(utf8str) = str::from_utf8(res_without_zero) {
-            String::from(utf8str)
+            String::from(utf8str.trim())
         } else {
             return Err("Failed".to_owned());
         }
@@ -107,15 +107,15 @@ impl R2Pipe {
 
     pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
         match *self {
-            R2Pipe::Pipe(ref mut x) => x.cmd(cmd),
-            R2Pipe::Lang(ref mut x) => x.cmd(cmd),
+            R2Pipe::Pipe(ref mut x) => x.cmd(cmd.trim()),
+            R2Pipe::Lang(ref mut x) => x.cmd(cmd.trim()),
         }
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
         match *self {
-            R2Pipe::Pipe(ref mut x) => x.cmdj(cmd),
-            R2Pipe::Lang(ref mut x) => x.cmdj(cmd),
+            R2Pipe::Pipe(ref mut x) => x.cmdj(cmd.trim()),
+            R2Pipe::Lang(ref mut x) => x.cmdj(cmd.trim()),
         }
     }
 
