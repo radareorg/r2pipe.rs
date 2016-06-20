@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate r2pipe;
+#[macro_use] extern crate r2pipe;
 use r2pipe::R2Pipe;
 use r2pipe::R2PipeSpawnOptions;
 use std::process;

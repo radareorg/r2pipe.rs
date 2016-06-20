@@ -144,8 +144,8 @@ impl R2Pipe {
     }
 
     /// Creates a new R2PipeSpawn.
-    pub fn spawn(name: String, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe, &'static str> {
-        if name == "" {
+    pub fn spawn<T: AsRef<str>>(name: T, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe, &'static str> {
+        if name.as_ref() == "" {
             if let Some(_) = R2Pipe::in_session() {
                 return R2Pipe::open();
             }
@@ -159,7 +159,7 @@ impl R2Pipe {
             Some(ref opt) => opt.args.clone(),
             _ => vec![],
         };
-        let path = Path::new(&*name);
+        let path = Path::new(name.as_ref());
         let child = match Command::new(exepath)
             .arg("-q0")
             .args(&args)

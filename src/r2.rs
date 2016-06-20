@@ -33,7 +33,7 @@ pub struct R2 {
 
 impl Default for R2 {
     fn default() -> R2 {
-        R2::new(None).expect("Unable to spawn r2 or find an open r2pipe")
+        R2::new::<&str>(None).expect("Unable to spawn r2 or find an open r2pipe")
     }
 }
 
@@ -42,15 +42,14 @@ impl Default for R2 {
 // Ideally, all commonly used commands must be supported for easier use.
 impl R2 {
     // TODO: Use an error type
-    //  - use AsRef<str>
-    pub fn new(path: Option<String>) -> Result<R2, String> {
+    pub fn new<T: AsRef<str>>(path: Option<T>) -> Result<R2, String> {
         if path.is_none() && !R2::in_session() {
             let e = "No r2 session open. Please specify path!".to_owned();
             return Err(e);
         }
 
         // This means that path is `Some` or we have an open session.
-        let pipe = open_pipe!(path).unwrap();
+        let pipe = open_pipe!(path.as_ref()).unwrap();
         Ok(R2 {
             pipe: pipe,
             readin: String::new(),
@@ -75,8 +74,7 @@ impl R2 {
     pub fn init(&mut self) {
         self.send("e asm.esil = true");
         self.send("e scr.color = false");
-        self.send("aaa");
-        self.flush();
+        self.analyze();
     }
 
     pub fn close(&mut self) {
@@ -94,8 +92,11 @@ impl R2 {
     }
 
     pub fn recv_json(&mut self) -> Json {
-        let res = self.recv().replace("\n", "");
-        Json::from_str(&*res).unwrap()
+        let mut res = self.recv().replace("\n", "");
+        if res.is_empty() {
+            res = "{}".to_owned();
+        }
+        Json::from_str(&res).unwrap()
     }
 
     pub fn flush(&mut self) {
@@ -103,55 +104,58 @@ impl R2 {
     }
 
     pub fn analyze(&mut self) {
-        self.send("aa");
+        self.send("aaaaa");
         self.flush();
     }
 
-    pub fn get_function(&mut self, func: &str) -> DecodeResult<LFunctionInfo> {
+    pub fn function(&mut self, func: &str) -> DecodeResult<LFunctionInfo> {
         let cmd = format!("pdfj @ {}", func);
-        self.send(&*cmd);
+        self.send(&cmd);
         let raw_json = self.recv();
         // Handle Error here.
-        json::decode(&*raw_json)
+        json::decode(&raw_json)
     }
 
     // get 'n' (or 16) instructions at 'offset' (or current position if offset in
     // `None`)
-    pub fn get_insts(&mut self,
-                     n: Option<u64>,
-                     offset: Option<&str>)
-                     -> DecodeResult<Vec<LOpInfo>> {
+    pub fn insts(&mut self, n: Option<u64>, offset: Option<&str>) -> DecodeResult<Vec<LOpInfo>> {
         let n = n.unwrap_or(16);
         let offset: &str = offset.unwrap_or_default();
         let mut cmd = format!("pdj{}", n);
         if !offset.is_empty() {
             cmd = format!("{} @ {}", cmd, offset);
         }
-        self.send(&*cmd);
+        self.send(&cmd);
         let raw_json = self.recv();
-        json::decode(&*raw_json)
+        json::decode(&raw_json)
     }
 
-    pub fn get_reg_info(&mut self) -> DecodeResult<LRegInfo> {
+    pub fn reg_info(&mut self) -> DecodeResult<LRegInfo> {
         self.send("drpj");
         let raw_json = self.recv();
-        json::decode(&*raw_json)
+        json::decode(&raw_json)
     }
 
-    pub fn get_flag_info(&mut self) -> DecodeResult<Vec<LFlagInfo>> {
+    pub fn flag_info(&mut self) -> DecodeResult<Vec<LFlagInfo>> {
         self.send("fj");
         let raw_json = self.recv();
-        json::decode(&*raw_json)
+        json::decode(&raw_json)
     }
 
-    pub fn get_bin_info(&mut self) -> DecodeResult<LBinInfo> {
+    pub fn bin_info(&mut self) -> DecodeResult<LBinInfo> {
         self.send("ij");
         let raw_json = self.recv();
-        json::decode(&*raw_json)
+        json::decode(&raw_json)
     }
 
-    pub fn get_fn_list(&mut self) -> Json {
+    pub fn fn_list(&mut self) -> DecodeResult<Vec<FunctionInfo>> {
         self.send("aflj");
-        self.recv_json()
+        let raw_json = self.recv();
+        json::decode(&raw_json)
+    }
+
+    pub fn sections(&mut self) -> DecodeResult<Vec<LSectionInfo>> {
+        self.send("Sj");
+        json::decode(&self.recv())
     }
 }
