@@ -158,4 +158,16 @@ impl R2 {
         self.send("Sj");
         json::decode(&self.recv())
     }
+
+    pub fn strings(&mut self, data_only: bool) -> DecodeResult<Vec<LStringInfo>> {
+        if data_only {
+            self.send("izj");
+            json::decode(&self.recv())
+        } else {
+            self.send("izzj");
+            #[derive(RustcDecodable)] struct Foo { strings: Vec<LStringInfo> };
+            let x: DecodeResult<Foo> = json::decode(&self.recv());
+            x.map(|i| i.strings)
+        }
+    }
 }

@@ -132,3 +132,23 @@ pub struct LSectionInfo {
     pub vaddr: Option<u64>,
     pub vsize: Option<u64>,
 }
+
+impl_decode!(for LStringInfo, mapping {  length: "length",
+                                        ordinal: "ordinal",
+                                          paddr: "paddr",
+                                        section: "section",
+                                           size: "size",
+                                         string: "string",
+                                          vaddr: "vaddr",
+                                          stype: "type" });
+#[derive(RustcEncodable, Debug, Clone, Default)]
+pub struct LStringInfo {
+    pub length: Option<u64>,
+    pub ordinal: Option<u64>,
+    pub paddr: Option<u64>,
+    pub section: Option<String>,
+    pub size: Option<u64>,
+    pub string: Option<String>,
+    pub vaddr: Option<u64>,
+    pub stype: Option<String>,
+}

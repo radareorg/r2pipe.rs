@@ -8,4 +8,6 @@ fn main() {
     println!("{:#?}", r2.sections().expect("Failed to get section data"));
     println!("{:#?}", r2.fn_list().expect("Failed to get function data"));
     println!("{:#?}", r2.flag_info().expect("Failed to get flag data"));
+    println!("{:#?}", r2.strings(true).expect("Failed to get strings data"));
+    println!("{:#?}", r2.strings(false).expect("Failed to get strings data"));
 }
