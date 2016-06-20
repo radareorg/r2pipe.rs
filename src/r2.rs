@@ -42,6 +42,7 @@ impl Default for R2 {
 // Ideally, all commonly used commands must be supported for easier use.
 impl R2 {
     // TODO: Use an error type
+    //  - use AsRef<str>
     pub fn new(path: Option<String>) -> Result<R2, String> {
         if path.is_none() && !R2::in_session() {
             let e = "No r2 session open. Please specify path!".to_owned();

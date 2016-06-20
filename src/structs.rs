@@ -8,6 +8,29 @@
 //! Basic structs for JSON encoding and decoding.
 use rustc_serialize::{Decodable, Decoder};
 
+macro_rules! impl_decode {
+    (for $st:ident, mapping { $($internal:ident: $external:expr),* }) => {
+        impl Decodable for $st {
+            fn decode<D: Decoder>(d: &mut D) -> Result<$st, D::Error> {
+                d.read_struct("root", 0, |dd| {
+                        let decoded = $st {
+                            $(
+                                $internal: dd.read_struct_field($external, 0, |d| Decodable::decode(d)).ok(),
+                            )*
+                        };
+                        Ok(decoded)
+                    })
+            }
+        }
+    }
+}
+
+impl_decode!(for LOpInfo, mapping {   esil: "esil",
+                                    offset: "offset",
+                                    opcode: "opcode",
+                                    optype: "type",
+                                      size: "size" });
+
 #[derive(RustcEncodable, Debug, Clone, Default)]
 pub struct LOpInfo {
     pub esil: Option<String>,
@@ -69,18 +92,43 @@ pub struct LBin {
     pub arch: Option<String>,
 }
 
-impl Decodable for LOpInfo {
-    fn decode<D: Decoder>(d: &mut D) -> Result<LOpInfo, D::Error> {
-        d.read_struct("root", 0, |d_| {
-            let op = LOpInfo {
-                esil: d_.read_struct_field("esil", 0, |d| Decodable::decode(d)).ok(),
-                offset: d_.read_struct_field("offset", 0, |d| Decodable::decode(d)).ok(),
-                opcode: d_.read_struct_field("opcode", 0, |d| Decodable::decode(d)).ok(),
-                optype: d_.read_struct_field("type", 0, |d| Decodable::decode(d)).ok(),
-                size: d_.read_struct_field("size", 0, |d| Decodable::decode(d)).ok(),
-            };
+impl_decode!(for FunctionInfo, mapping {  callrefs: "callrefs",
+                                          calltype: "calltype",
+                                         codexrefs: "codexrefs",
+                                          datarefs: "datarefs",
+                                         dataxrefs: "dataxrefs",
+                                              name: "name",
+                                            offset: "offset",
+                                            realsz: "realsz",
+                                              size: "size",
+                                             ftype: "type" });
+#[derive(RustcEncodable, Debug, Clone, Default)]
+pub struct FunctionInfo {
+    pub callrefs: Option<Vec<LCallInfo>>,
+    pub calltype: Option<String>,
+    pub codexrefs: Option<Vec<u64>>,
+    pub datarefs: Option<Vec<u64>>,
+    pub dataxrefs: Option<Vec<u64>>,
+    pub name: Option<String>,
+    pub offset: Option<u64>,
+    pub realsz: Option<u64>,
+    pub size: Option<u64>,
+    pub ftype: Option<String>,
+}
 
-            Ok(op)
-        })
-    }
+impl_decode!(for LCallInfo, mapping { addr: "addr", call_type: "type" });
+#[derive(RustcEncodable, Debug, Clone, Default)]
+pub struct LCallInfo {
+    pub addr: Option<u64>,
+    pub call_type: Option<String>,
+}
+
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone, Default)]
+pub struct LSectionInfo {
+    pub flags: Option<String>,
+    pub name: Option<String>,
+    pub paddr: Option<u64>,
+    pub size: Option<u64>,
+    pub vaddr: Option<u64>,
+    pub vsize: Option<u64>,
 }
