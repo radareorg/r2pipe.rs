@@ -104,7 +104,7 @@ impl R2 {
     }
 
     pub fn analyze(&mut self) {
-        self.send("aaaaa");
+        self.send("aaaaaaaa");
         self.flush();
     }
 

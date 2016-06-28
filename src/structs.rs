@@ -6,9 +6,9 @@
 // except according to those terms.
 
 //! Basic structs for JSON encoding and decoding.
-use rustc_serialize::{Decodable, Decoder};
+use rustc_serialize::{Decodable, Decoder, Encoder, Encodable};
 
-macro_rules! impl_decode {
+macro_rules! impl_encode_decode {
     (for $st:ident, mapping { $($internal:ident: $external:expr),* }) => {
         impl Decodable for $st {
             fn decode<D: Decoder>(d: &mut D) -> Result<$st, D::Error> {
@@ -22,16 +22,29 @@ macro_rules! impl_decode {
                     })
             }
         }
+
+        impl Encodable for $st {
+            fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+                let mut i = 0;
+                s.emit_struct("root", 1, |s| {
+                    $(
+                        try!(s.emit_struct_field($external, i, |s| self.$internal.encode(s)));
+                        i = 1;
+                     )*
+                        Ok(())
+                })
+            }
+        }
     }
 }
 
-impl_decode!(for LOpInfo, mapping {   esil: "esil",
-                                    offset: "offset",
-                                    opcode: "opcode",
-                                    optype: "type",
-                                      size: "size" });
+impl_encode_decode!(for LOpInfo, mapping {   esil: "esil",
+                                           offset: "offset",
+                                           opcode: "opcode",
+                                           optype: "type",
+                                             size: "size" });
 
-#[derive(RustcEncodable, Debug, Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct LOpInfo {
     pub esil: Option<String>,
     pub offset: Option<u64>,
@@ -92,21 +105,21 @@ pub struct LBin {
     pub arch: Option<String>,
 }
 
-impl_decode!(for FunctionInfo, mapping {  callrefs: "callrefs",
-                                          calltype: "calltype",
-                                         codexrefs: "codexrefs",
-                                          datarefs: "datarefs",
-                                         dataxrefs: "dataxrefs",
-                                              name: "name",
-                                            offset: "offset",
-                                            realsz: "realsz",
-                                              size: "size",
-                                             ftype: "type" });
-#[derive(RustcEncodable, Debug, Clone, Default)]
+impl_encode_decode!(for FunctionInfo, mapping {  callrefs: "callrefs",
+                                                 calltype: "calltype",
+                                                codexrefs: "codexrefs",
+                                                 datarefs: "datarefs",
+                                                dataxrefs: "dataxrefs",
+                                                     name: "name",
+                                                   offset: "offset",
+                                                   realsz: "realsz",
+                                                     size: "size",
+                                                    ftype: "type" });
+#[derive(Debug, Clone, Default)]
 pub struct FunctionInfo {
     pub callrefs: Option<Vec<LCallInfo>>,
     pub calltype: Option<String>,
-    pub codexrefs: Option<Vec<u64>>,
+    pub codexrefs: Option<Vec<LCallInfo>>,
     pub datarefs: Option<Vec<u64>>,
     pub dataxrefs: Option<Vec<u64>>,
     pub name: Option<String>,
@@ -116,8 +129,8 @@ pub struct FunctionInfo {
     pub ftype: Option<String>,
 }
 
-impl_decode!(for LCallInfo, mapping { addr: "addr", call_type: "type" });
-#[derive(RustcEncodable, Debug, Clone, Default)]
+impl_encode_decode!(for LCallInfo, mapping { addr: "addr", call_type: "type" });
+#[derive(Debug, Clone, Default)]
 pub struct LCallInfo {
     pub addr: Option<u64>,
     pub call_type: Option<String>,
@@ -133,15 +146,15 @@ pub struct LSectionInfo {
     pub vsize: Option<u64>,
 }
 
-impl_decode!(for LStringInfo, mapping {  length: "length",
-                                        ordinal: "ordinal",
-                                          paddr: "paddr",
-                                        section: "section",
-                                           size: "size",
-                                         string: "string",
-                                          vaddr: "vaddr",
-                                          stype: "type" });
-#[derive(RustcEncodable, Debug, Clone, Default)]
+impl_encode_decode!(for LStringInfo, mapping {  length: "length",
+                                               ordinal: "ordinal",
+                                                 paddr: "paddr",
+                                               section: "section",
+                                                  size: "size",
+                                                string: "string",
+                                                 vaddr: "vaddr",
+                                                 stype: "type" });
+#[derive(Debug, Clone, Default)]
 pub struct LStringInfo {
     pub length: Option<u64>,
     pub ordinal: Option<u64>,
