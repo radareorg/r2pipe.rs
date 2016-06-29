@@ -1,6 +1,6 @@
 [package]
 name = "r2pipe"
-version = "0.3.0"
+version = "0.4.0"
 authors = [
   "pancake <pancake@nopcode.org>",
   "sushant94 <sushant.dinesh94@gmail.com>"
@@ -24,6 +24,6 @@ license = "MIT OR Apache-2.0"
 default = []
 
 [dependencies]
-libc = "*"
-rustc-serialize = "*"
+libc = "0.2.13"
+rustc-serialize = "0.3.19"
 clippy = {version = "0.0.61", optional = true}
