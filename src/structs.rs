@@ -114,7 +114,8 @@ impl_encode_decode!(for FunctionInfo, mapping {  callrefs: "callrefs",
                                                    offset: "offset",
                                                    realsz: "realsz",
                                                      size: "size",
-                                                    ftype: "type" });
+                                                    ftype: "type",
+                                                    locals: "locals" });
 #[derive(Debug, Clone, Default)]
 pub struct FunctionInfo {
     pub callrefs: Option<Vec<LCallInfo>>,
@@ -127,6 +128,7 @@ pub struct FunctionInfo {
     pub realsz: Option<u64>,
     pub size: Option<u64>,
     pub ftype: Option<String>,
+    pub locals: Option<Vec<LVarInfo>>,
 }
 
 impl_encode_decode!(for LCallInfo, mapping { addr: "addr", call_type: "type" });
@@ -164,4 +166,16 @@ pub struct LStringInfo {
     pub string: Option<String>,
     pub vaddr: Option<u64>,
     pub stype: Option<String>,
+}
+
+impl_encode_decode!(for LVarInfo, mapping { name: "name",
+                                            kind: "kind",
+                                            vtype: "type",
+                                            reference: "ref"});
+#[derive(Debug, Clone, Default)]
+pub struct LVarInfo {
+    pub name: Option<String>,
+    pub kind: Option<String>,
+    pub vtype: Option<String>,
+    pub reference: Option<String>,
 }

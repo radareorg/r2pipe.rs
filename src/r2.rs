@@ -26,6 +26,63 @@ use rustc_serialize::json;
 
 use super::structs::*;
 
+mod t_structs {
+    use structs::{FunctionInfo, LCallInfo};
+    use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+
+    #[derive(Debug, Clone, Default)]
+    pub struct FunctionInfo_ {
+        pub callrefs: Option<Vec<LCallInfo>>,
+        pub calltype: Option<String>,
+        pub codexrefs: Option<Vec<LCallInfo>>,
+        pub datarefs: Option<Vec<u64>>,
+        pub dataxrefs: Option<Vec<u64>>,
+        pub name: Option<String>,
+        pub offset: Option<u64>,
+        pub realsz: Option<u64>,
+        pub size: Option<u64>,
+        pub ftype: Option<String>,
+    }
+
+    impl Decodable for FunctionInfo_ {
+        fn decode<D: Decoder>(d: &mut D) -> Result<FunctionInfo_, D::Error> {
+            d.read_struct("root", 0, |dd| {
+                let decoded = FunctionInfo_ {
+                    callrefs: dd.read_struct_field("callrefs", 0, |d| Decodable::decode(d)).ok(),
+                    calltype: dd.read_struct_field("calltype", 0, |d| Decodable::decode(d)).ok(),
+                    codexrefs: dd.read_struct_field("codexrefs", 0, |d| Decodable::decode(d)).ok(),
+                    datarefs: dd.read_struct_field("datarefs", 0, |d| Decodable::decode(d)).ok(),
+                    dataxrefs: dd.read_struct_field("dataxrefs", 0, |d| Decodable::decode(d)).ok(),
+                    name: dd.read_struct_field("name", 0, |d| Decodable::decode(d)).ok(),
+                    offset: dd.read_struct_field("offset", 0, |d| Decodable::decode(d)).ok(),
+                    realsz: dd.read_struct_field("realsz", 0, |d| Decodable::decode(d)).ok(),
+                    size: dd.read_struct_field("size", 0, |d| Decodable::decode(d)).ok(),
+                    ftype: dd.read_struct_field("type", 0, |d| Decodable::decode(d)).ok(),
+                };
+                Ok(decoded)
+            })
+        }
+    }
+
+    impl<'a> From<&'a FunctionInfo_> for FunctionInfo {
+        fn from(finfo: &'a FunctionInfo_) -> FunctionInfo {
+            FunctionInfo {
+                callrefs: finfo.callrefs.clone(),
+                calltype: finfo.calltype.clone(),
+                codexrefs: finfo.codexrefs.clone(),
+                datarefs: finfo.datarefs.clone(),
+                dataxrefs: finfo.dataxrefs.clone(),
+                name: finfo.name.clone(),
+                offset: finfo.offset.clone(),
+                realsz: finfo.realsz.clone(),
+                size: finfo.size.clone(),
+                ftype: finfo.ftype.clone(),
+                locals: None,
+            }
+        }
+    }
+}
+
 pub struct R2 {
     pipe: R2Pipe,
     readin: String,
@@ -151,7 +208,15 @@ impl R2 {
     pub fn fn_list(&mut self) -> DecodeResult<Vec<FunctionInfo>> {
         self.send("aflj");
         let raw_json = self.recv();
-        json::decode(&raw_json)
+        let mut finfo: DecodeResult<Vec<FunctionInfo>> =
+            json::decode::<Vec<t_structs::FunctionInfo_>>(&raw_json)
+                .map(|x| x.iter().map(From::from).collect());
+        if let Ok(ref mut fns) = finfo {
+            for f in fns.iter_mut() {
+                f.locals = self.locals_of(f.offset.unwrap()).ok();
+            }
+        }
+        finfo
     }
 
     pub fn sections(&mut self) -> DecodeResult<Vec<LSectionInfo>> {
@@ -165,9 +230,17 @@ impl R2 {
             json::decode(&self.recv())
         } else {
             self.send("izzj");
-            #[derive(RustcDecodable)] struct Foo { strings: Vec<LStringInfo> };
+            #[derive(RustcDecodable)]
+            struct Foo {
+                strings: Vec<LStringInfo>,
+            };
             let x: DecodeResult<Foo> = json::decode(&self.recv());
             x.map(|i| i.strings)
         }
+    }
+
+    pub fn locals_of(&mut self, location: u64) -> DecodeResult<Vec<LVarInfo>> {
+        self.send(&format!("afaj @ {}", location));
+        json::decode(&self.recv())
     }
 }
