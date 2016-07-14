@@ -131,11 +131,12 @@ pub struct FunctionInfo {
     pub locals: Option<Vec<LVarInfo>>,
 }
 
-impl_encode_decode!(for LCallInfo, mapping { addr: "addr", call_type: "type" });
+impl_encode_decode!(for LCallInfo, mapping { target: "addr", call_type: "type", source: "at"});
 #[derive(Debug, Clone, Default)]
 pub struct LCallInfo {
-    pub addr: Option<u64>,
+    pub target: Option<u64>,
     pub call_type: Option<String>,
+    pub source: Option<u64>,
 }
 
 #[derive(RustcDecodable, RustcEncodable, Debug, Clone, Default)]
