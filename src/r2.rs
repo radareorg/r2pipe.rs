@@ -161,7 +161,7 @@ impl R2 {
     }
 
     pub fn analyze(&mut self) {
-        self.send("aaaaaaaa");
+        self.send("aa");
         self.flush();
     }
 
@@ -213,7 +213,12 @@ impl R2 {
                 .map(|x| x.iter().map(From::from).collect());
         if let Ok(ref mut fns) = finfo {
             for f in fns.iter_mut() {
-                f.locals = self.locals_of(f.offset.unwrap()).ok();
+                let res = self.locals_of(f.offset.unwrap());
+                if res.is_ok() {
+                    f.locals = res.ok();
+                } else {
+                    f.locals = Some(Vec::new());
+                }
             }
         }
         finfo
@@ -230,17 +235,14 @@ impl R2 {
             json::decode(&self.recv())
         } else {
             self.send("izzj");
-            #[derive(RustcDecodable)]
-            struct Foo {
-                strings: Vec<LStringInfo>,
-            };
-            let x: DecodeResult<Foo> = json::decode(&self.recv());
-            x.map(|i| i.strings)
+            let x: DecodeResult<Vec<LStringInfo>> = json::decode(&self.recv());
+            x
         }
     }
 
     pub fn locals_of(&mut self, location: u64) -> DecodeResult<Vec<LVarInfo>> {
         self.send(&format!("afaj @ {}", location));
-        json::decode(&self.recv())
+        let x: DecodeResult<Vec<LVarInfo>> = json::decode(&self.recv());
+        x
     }
 }
