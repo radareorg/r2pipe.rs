@@ -178,5 +178,11 @@ pub struct LVarInfo {
     pub name: Option<String>,
     pub kind: Option<String>,
     pub vtype: Option<String>,
-    pub reference: Option<String>,
+    pub reference: Option<LVarRef>,
+}
+
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone, Default)]
+pub struct LVarRef {
+    pub base: Option<String>,
+    pub offset: Option<i64>,
 }

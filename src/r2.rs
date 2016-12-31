@@ -28,7 +28,7 @@ use super::structs::*;
 
 mod t_structs {
     use structs::{FunctionInfo, LCallInfo};
-    use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+    use rustc_serialize::{Decodable, Decoder};
 
     #[derive(Debug, Clone, Default)]
     pub struct FunctionInfo_ {
@@ -241,7 +241,7 @@ impl R2 {
     }
 
     pub fn locals_of(&mut self, location: u64) -> DecodeResult<Vec<LVarInfo>> {
-        self.send(&format!("afaj @ {}", location));
+        self.send(&format!("afvbj @ {}", location));
         let x: DecodeResult<Vec<LVarInfo>> = json::decode(&self.recv());
         x
     }
