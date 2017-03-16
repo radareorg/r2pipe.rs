@@ -245,4 +245,16 @@ impl R2 {
         let x: DecodeResult<Vec<LVarInfo>> = json::decode(&self.recv());
         x
     }
+
+    pub fn set_config_var(&mut self, variable: &str, subconfig: &str, value: &str) {
+        // TODO: Use an error type
+        self.send(&format!("e {}.{}={}", variable, subconfig, value));
+    }
+
+    // ROP based functionality
+    pub fn rop_gadgets_by_string(&mut self, rop_string: &str) -> DecodeResult<Vec<LGadgetInfo>> {
+        self.send(&format!("/Rj {}", rop_string));
+        let x: DecodeResult<Vec<LGadgetInfo>> = json::decode(&self.recv());
+        x
+    }
 }
