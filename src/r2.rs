@@ -161,7 +161,7 @@ impl R2 {
     }
 
     pub fn analyze(&mut self) {
-        self.send("aa");
+        self.send("aaa");
         self.flush();
     }
 
