@@ -21,16 +21,15 @@
 //! same.
 
 use r2pipe::R2Pipe;
-use rustc_serialize::json::{DecodeResult, Json};
-use rustc_serialize::json;
+use serde_json;
+use serde_json::Error;
 
 use super::structs::*;
 
 mod t_structs {
     use structs::{FunctionInfo, LCallInfo};
-    use rustc_serialize::{Decodable, Decoder};
 
-    #[derive(Debug, Clone, Default)]
+    #[derive(Debug, Clone, Default, Serialize, Deserialize)]
     pub struct FunctionInfo_ {
         pub callrefs: Option<Vec<LCallInfo>>,
         pub calltype: Option<String>,
@@ -42,26 +41,6 @@ mod t_structs {
         pub realsz: Option<u64>,
         pub size: Option<u64>,
         pub ftype: Option<String>,
-    }
-
-    impl Decodable for FunctionInfo_ {
-        fn decode<D: Decoder>(d: &mut D) -> Result<FunctionInfo_, D::Error> {
-            d.read_struct("root", 0, |dd| {
-                let decoded = FunctionInfo_ {
-                    callrefs: dd.read_struct_field("callrefs", 0, |d| Decodable::decode(d)).ok(),
-                    calltype: dd.read_struct_field("calltype", 0, |d| Decodable::decode(d)).ok(),
-                    codexrefs: dd.read_struct_field("codexrefs", 0, |d| Decodable::decode(d)).ok(),
-                    datarefs: dd.read_struct_field("datarefs", 0, |d| Decodable::decode(d)).ok(),
-                    dataxrefs: dd.read_struct_field("dataxrefs", 0, |d| Decodable::decode(d)).ok(),
-                    name: dd.read_struct_field("name", 0, |d| Decodable::decode(d)).ok(),
-                    offset: dd.read_struct_field("offset", 0, |d| Decodable::decode(d)).ok(),
-                    realsz: dd.read_struct_field("realsz", 0, |d| Decodable::decode(d)).ok(),
-                    size: dd.read_struct_field("size", 0, |d| Decodable::decode(d)).ok(),
-                    ftype: dd.read_struct_field("type", 0, |d| Decodable::decode(d)).ok(),
-                };
-                Ok(decoded)
-            })
-        }
     }
 
     impl<'a> From<&'a FunctionInfo_> for FunctionInfo {
@@ -148,12 +127,13 @@ impl R2 {
         res
     }
 
-    pub fn recv_json(&mut self) -> Json {
+    pub fn recv_json(&mut self) -> String {
         let mut res = self.recv().replace("\n", "");
         if res.is_empty() {
             res = "{}".to_owned();
         }
-        Json::from_str(&res).unwrap()
+
+        res
     }
 
     pub fn flush(&mut self) {
@@ -165,17 +145,17 @@ impl R2 {
         self.flush();
     }
 
-    pub fn function(&mut self, func: &str) -> DecodeResult<LFunctionInfo> {
+    pub fn function(&mut self, func: &str) -> Result<LFunctionInfo, Error> {
         let cmd = format!("pdfj @ {}", func);
         self.send(&cmd);
         let raw_json = self.recv();
         // Handle Error here.
-        json::decode(&raw_json)
+        serde_json::from_str(&raw_json)
     }
 
     // get 'n' (or 16) instructions at 'offset' (or current position if offset in
     // `None`)
-    pub fn insts(&mut self, n: Option<u64>, offset: Option<&str>) -> DecodeResult<Vec<LOpInfo>> {
+    pub fn insts(&mut self, n: Option<u64>, offset: Option<&str>) -> Result<Vec<LOpInfo>, Error> {
         let n = n.unwrap_or(16);
         let offset: &str = offset.unwrap_or_default();
         let mut cmd = format!("pdj{}", n);
@@ -184,32 +164,32 @@ impl R2 {
         }
         self.send(&cmd);
         let raw_json = self.recv();
-        json::decode(&raw_json)
+        serde_json::from_str(&raw_json)
     }
 
-    pub fn reg_info(&mut self) -> DecodeResult<LRegInfo> {
+    pub fn reg_info(&mut self) -> Result<LRegInfo, Error> {
         self.send("drpj");
         let raw_json = self.recv();
-        json::decode(&raw_json)
+        serde_json::from_str(&raw_json)
     }
 
-    pub fn flag_info(&mut self) -> DecodeResult<Vec<LFlagInfo>> {
+    pub fn flag_info(&mut self) -> Result<Vec<LFlagInfo>, Error> {
         self.send("fj");
         let raw_json = self.recv();
-        json::decode(&raw_json)
+        serde_json::from_str(&raw_json)
     }
 
-    pub fn bin_info(&mut self) -> DecodeResult<LBinInfo> {
+    pub fn bin_info(&mut self) -> Result<LBinInfo, Error> {
         self.send("ij");
         let raw_json = self.recv();
-        json::decode(&raw_json)
+        serde_json::from_str(&raw_json)
     }
 
-    pub fn fn_list(&mut self) -> DecodeResult<Vec<FunctionInfo>> {
+    pub fn fn_list(&mut self) -> Result<Vec<FunctionInfo>, Error> {
         self.send("aflj");
         let raw_json = self.recv();
-        let mut finfo: DecodeResult<Vec<FunctionInfo>> =
-            json::decode::<Vec<t_structs::FunctionInfo_>>(&raw_json)
+        let mut finfo: Result<Vec<FunctionInfo>, Error> =
+            serde_json::from_str::<Vec<t_structs::FunctionInfo_>>(&raw_json)
                 .map(|x| x.iter().map(From::from).collect());
         if let Ok(ref mut fns) = finfo {
             for f in fns.iter_mut() {
@@ -224,25 +204,25 @@ impl R2 {
         finfo
     }
 
-    pub fn sections(&mut self) -> DecodeResult<Vec<LSectionInfo>> {
+    pub fn sections(&mut self) -> Result<Vec<LSectionInfo>, Error> {
         self.send("Sj");
-        json::decode(&self.recv())
+        serde_json::from_str(&self.recv())
     }
 
-    pub fn strings(&mut self, data_only: bool) -> DecodeResult<Vec<LStringInfo>> {
+    pub fn strings(&mut self, data_only: bool) -> Result<Vec<LStringInfo>, Error> {
         if data_only {
             self.send("izj");
-            json::decode(&self.recv())
+            serde_json::from_str(&self.recv())
         } else {
             self.send("izzj");
-            let x: DecodeResult<Vec<LStringInfo>> = json::decode(&self.recv());
+            let x: Result<Vec<LStringInfo>, Error> = serde_json::from_str(&self.recv());
             x
         }
     }
 
-    pub fn locals_of(&mut self, location: u64) -> DecodeResult<Vec<LVarInfo>> {
+    pub fn locals_of(&mut self, location: u64) -> Result<Vec<LVarInfo>, Error> {
         self.send(&format!("afvbj @ {}", location));
-        let x: DecodeResult<Vec<LVarInfo>> = json::decode(&self.recv());
+        let x: Result<Vec<LVarInfo>, Error> = serde_json::from_str(&self.recv());
         x
     }
 }
