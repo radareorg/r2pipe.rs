@@ -38,8 +38,8 @@
 //!     let mut r2p = open_pipe!(path).unwrap();
 //!     println!("{}", r2p.cmd("?e Hello World").unwrap());
 //!     if let Ok(json) = r2p.cmdj("ij") {
-//!         println!("{}", json);
-//!         //println!("ARCH {}", json.find_path(&["bin","arch"]).unwrap());
+//!         println!("{}", serde_json::to_string_pretty(&json).unwrap());
+//!         println!("ARCH {}", json["bin"]["arch"]);
 //!     }
 //!     r2p.close();
 //! }

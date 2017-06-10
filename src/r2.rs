@@ -23,6 +23,7 @@
 use r2pipe::R2Pipe;
 use serde_json;
 use serde_json::Error;
+use serde_json::Value;
 
 use super::structs::*;
 
@@ -127,13 +128,14 @@ impl R2 {
         res
     }
 
-    pub fn recv_json(&mut self) -> String {
+    pub fn recv_json(&mut self) -> Value {
         let mut res = self.recv().replace("\n", "");
         if res.is_empty() {
             res = "{}".to_owned();
         }
 
-        res
+        // TODO: this should probably return a Result<Value, Error>
+        serde_json::from_str(&res).unwrap()
     }
 
     pub fn flush(&mut self) {
