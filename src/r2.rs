@@ -143,7 +143,7 @@ impl R2 {
     }
 
     pub fn analyze(&mut self) {
-        self.send("aa");
+        self.send("aaa");
         self.flush();
     }
 
@@ -225,6 +225,18 @@ impl R2 {
     pub fn locals_of(&mut self, location: u64) -> Result<Vec<LVarInfo>, Error> {
         self.send(&format!("afvbj @ {}", location));
         let x: Result<Vec<LVarInfo>, Error> = serde_json::from_str(&self.recv());
+        x
+    }
+
+    pub fn set_config_var(&mut self, variable: &str, subconfig: &str, value: &str) {
+        // TODO: Use an error type
+        self.send(&format!("e {}.{}={}", variable, subconfig, value));
+    }
+
+    // ROP based functionality
+    pub fn rop_gadgets_by_string(&mut self, rop_string: &str) -> DecodeResult<Vec<LGadgetInfo>> {
+        self.send(&format!("/Rj {}", rop_string));
+        let x: DecodeResult<Vec<LGadgetInfo>> = json::decode(&self.recv());
         x
     }
 }

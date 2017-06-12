@@ -125,3 +125,24 @@ pub struct LVarRef {
     pub base: Option<String>,
     pub offset: Option<i64>,
 }
+
+impl_encode_decode!(for LReducedOpInfo, mapping { 
+                                           offset: "offset",
+                                           opcode: "opcode",
+                                           optype: "type",
+                                             size: "size" });
+
+#[derive(Debug, Clone, Default)]
+pub struct LReducedOpInfo {
+    pub offset: Option<u64>,
+    pub opcode: Option<String>,
+    pub optype: Option<String>,
+    pub size: Option<u64>,
+}
+
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone, Default)]
+pub struct LGadgetInfo {
+    pub opcodes: Option<Vec<LReducedOpInfo>>,
+    pub retaddr: Option<u64>,
+    pub size: Option<u64>,
+}
