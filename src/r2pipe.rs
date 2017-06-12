@@ -3,7 +3,6 @@
 //! Please check crate level documentation for more details and example.
 
 use std::os::unix::io::FromRawFd;
-use rustc_serialize::json::Json;
 
 use libc;
 use std::process::Command;
@@ -15,6 +14,10 @@ use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+
+use serde_json;
+use serde_json::Value;
+use serde_json::Error;
 
 /// File descriptors to the parent r2 process.
 pub struct R2PipeLang {
@@ -112,7 +115,7 @@ impl R2Pipe {
         }
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
+    pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         match *self {
             R2Pipe::Pipe(ref mut x) => x.cmdj(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmdj(cmd.trim()),
@@ -201,15 +204,17 @@ impl R2PipeSpawn {
         process_result(res)
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
+    pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         if let Ok(res) = self.cmd(cmd) {
             if res == "" {
                 return Err("Empty JSON".to_string());
             }
-            if let Ok(jstr) = Json::from_str(&res) {
-                Ok(jstr)
+
+            let v: Result<Value, Error> = serde_json::from_str(&res);
+            if v.is_ok() {
+                Ok(v.unwrap())
             } else {
-                Err(format!("Invalid JSON for {} ({})", cmd, res))
+                v.map_err(|e| e.to_string())
             }
         } else {
             Err("oops cmd".to_string())
@@ -229,9 +234,15 @@ impl R2PipeLang {
         process_result(res)
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Json, String> {
+    pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         let res = try!(self.cmd(cmd));
-        Ok(Json::from_str(&res).unwrap())
+
+        let v: Result<Value, Error> = serde_json::from_str(&res);
+        if v.is_ok() {
+            Ok(v.unwrap())
+        } else {
+            v.map_err(|e| e.to_string())
+        }
     }
 
     pub fn close(&mut self) {

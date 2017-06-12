@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate r2pipe;
 use r2pipe::R2Pipe;
 

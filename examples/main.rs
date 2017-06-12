@@ -1,7 +1,11 @@
-#[macro_use] extern crate r2pipe;
+extern crate r2pipe;
+extern crate serde_json;
+
 use r2pipe::R2Pipe;
 use r2pipe::R2PipeSpawnOptions;
 use std::process;
+
+use serde_json::Value;
 
 fn test_trim() {
     let mut ns = R2Pipe::spawn("/bin/ls".to_owned(), None).unwrap();
@@ -29,15 +33,9 @@ fn main() {
     println!("{}", r2p.cmd("?e Hello World").unwrap());
 
     let json = r2p.cmdj("ij").unwrap();
-    println!("{}", json.pretty());
-    println!("ARCH {}", json.find_path(&["bin", "arch"]).unwrap());
-
-    // println!("BITS 0x{:x}",json.find_path(&["bin","bits"]).unwrap().as_u64().unwrap());
-    if let Some(bits) = json.find_path(&["bin", "bits"]) {
-        if let Some(n_bits) = bits.as_u64() {
-            println!("BITS 0x{:x}", n_bits);
-        }
-    }
+    println!("{}", serde_json::to_string_pretty(&json).unwrap());
+    println!("ARCH {}", json["bin"]["arch"]);
+    println!("BITS {}", json["bin"]["bits"]);
     println!("Disasm:\n{}", r2p.cmd("pd 20").unwrap());
     println!("Hexdump:\n{}", r2p.cmd("px 64").unwrap());
     r2p.close();

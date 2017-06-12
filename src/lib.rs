@@ -31,14 +31,15 @@
 //! ```no_run
 //! #[macro_use]
 //! extern crate r2pipe;
+//! extern crate serde_json;
 //! use r2pipe::R2Pipe;
 //! fn main() {
 //!     let path = Some("/bin/ls".to_owned());
 //!     let mut r2p = open_pipe!(path).unwrap();
 //!     println!("{}", r2p.cmd("?e Hello World").unwrap());
 //!     if let Ok(json) = r2p.cmdj("ij") {
-//!         println!("{}", json.pretty());
-//!         println!("ARCH {}", json.find_path(&["bin","arch"]).unwrap());
+//!         println!("{}", serde_json::to_string_pretty(&json).unwrap());
+//!         println!("ARCH {}", json["bin"]["arch"]);
 //!     }
 //!     r2p.close();
 //! }
@@ -51,7 +52,10 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate libc;
-extern crate rustc_serialize;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 #[macro_use]
 pub mod r2pipe;
