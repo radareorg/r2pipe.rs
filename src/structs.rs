@@ -12,6 +12,7 @@ pub struct LOpInfo {
     pub esil: Option<String>,
     pub offset: Option<u64>,
     pub opcode: Option<String>,
+    #[serde(rename="type")]
     pub optype: Option<String>,
     pub size: Option<u64>,
 }
@@ -79,14 +80,18 @@ pub struct FunctionInfo {
     pub offset: Option<u64>,
     pub realsz: Option<u64>,
     pub size: Option<u64>,
+    #[serde(rename="type")]
     pub ftype: Option<String>,
     pub locals: Option<Vec<LVarInfo>>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LCallInfo {
+    #[serde(rename="addr")]
     pub target: Option<u64>,
+    #[serde(rename="type")]
     pub call_type: Option<String>,
+    #[serde(rename="at")]
     pub source: Option<u64>,
 }
 
@@ -109,6 +114,7 @@ pub struct LStringInfo {
     pub size: Option<u64>,
     pub string: Option<String>,
     pub vaddr: Option<u64>,
+    #[serde(rename="type")]
     pub stype: Option<String>,
 }
 
@@ -116,7 +122,9 @@ pub struct LStringInfo {
 pub struct LVarInfo {
     pub name: Option<String>,
     pub kind: Option<String>,
+    #[serde(rename="type")]
     pub vtype: Option<String>,
+    #[serde(rename="ref")]
     pub reference: Option<LVarRef>,
 }
 
