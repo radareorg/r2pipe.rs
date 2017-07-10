@@ -1,4 +1,6 @@
-//! `R2Pipe` provides functions to interact with [radare2](http://rada.re/r/)
+//! `R2Pipe` provides functions to interact with [radare2](http://rada.re/r/).
+//! This aims to be a raw API. For more higher-level functions and structs to abstract
+//! over the generated output, see [r2pipe.rs-frontend]().
 //!
 //! Hence this requires you to have radare2 installed on you system. For more
 //! information refer to the r2 [repository](https://github.com/radare/radare2).
@@ -60,7 +62,6 @@ extern crate serde_derive;
 #[macro_use]
 pub mod r2pipe;
 pub mod r2;
-pub mod structs;
 
 // Rexport to bring it out one module.
 pub use self::r2pipe::R2PipeSpawnOptions;
