@@ -60,12 +60,6 @@ impl R2 {
         }
     }
 
-    // Does some basic configurations (sane defaults).
-    pub fn init(&mut self) {
-        self.send("e asm.esil = true");
-        self.send("e scr.color = false");
-    }
-
     pub fn close(&mut self) {
         self.send("q!");
     }
