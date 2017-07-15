@@ -7,6 +7,10 @@ The Rust Crate to interact with radare2.
 Please check [Documentation](https://radare.github.io/r2pipe.rs) to get
 started.
 
+**NOTICE**
+
+Structures and API functions have been moved to [radare2-r2pipe-api](https://github.com/radare/radare2-r2pipe-api)
+repository. Please make sure you update your dependencies and imports.
 
 TODO
 ----
