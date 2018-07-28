@@ -14,6 +14,7 @@ use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::net::{TcpStream, ToSocketAddrs, SocketAddr};
 
 use serde_json;
 use serde_json::Value;
@@ -31,16 +32,22 @@ pub struct R2PipeSpawn {
     write: process::ChildStdin,
 }
 
+/// Stores the socket address of the r2 process.
+pub struct R2PipeTcp {
+    socket_addr: SocketAddr,
+}
+
 #[derive(Default)]
 pub struct R2PipeSpawnOptions {
     pub exepath: String,
     pub args: Vec<&'static str>,
 }
 
-/// Provides abstraction between the two invocation methods.
+/// Provides abstraction between the three invocation methods.
 pub enum R2Pipe {
     Pipe(R2PipeSpawn),
     Lang(R2PipeLang),
+    Tcp(R2PipeTcp),
 }
 
 fn atoi(k: &str) -> i32 {
@@ -112,6 +119,7 @@ impl R2Pipe {
         match *self {
             R2Pipe::Pipe(ref mut x) => x.cmd(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmd(cmd.trim()),
+            R2Pipe::Tcp(ref mut x) => x.cmd(cmd.trim()),
         }
     }
 
@@ -119,6 +127,7 @@ impl R2Pipe {
         match *self {
             R2Pipe::Pipe(ref mut x) => x.cmdj(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmdj(cmd.trim()),
+            R2Pipe::Tcp(ref mut x) => x.cmdj(cmd.trim()),
         }
     }
 
@@ -126,6 +135,7 @@ impl R2Pipe {
         match *self {
             R2Pipe::Pipe(ref mut x) => x.close(),
             R2Pipe::Lang(ref mut x) => x.close(),
+            R2Pipe::Tcp(ref mut x) => x.close(),
         }
     }
 
@@ -188,6 +198,14 @@ impl R2Pipe {
 
         Ok(R2Pipe::Pipe(res))
     }
+
+    /// Creates a new R2PipeTcp
+    pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<R2Pipe, &'static str> {
+        // use `connect` to figure out which socket address works
+        let stream = try!(TcpStream::connect(addr).map_err(|_| "Unable to connect TCP stream"));
+        let addr = try!(stream.peer_addr().map_err(|_| "Unable to get peer address"));
+        Ok(R2Pipe::Tcp(R2PipeTcp { socket_addr: addr }))
+    }
 }
 
 impl R2PipeSpawn {
@@ -249,4 +267,25 @@ impl R2PipeLang {
         // self.read.close();
         // self.write.close();
     }
+}
+
+impl R2PipeTcp {
+    pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
+        let mut stream = try!(TcpStream::connect(self.socket_addr)
+                              .map_err(|e| format!("Unable to connect TCP stream: {}", e)));
+        try!(stream.write_all(cmd.as_bytes())
+             .map_err(|e| format!("Unable to write to TCP stream: {}", e)));
+        let mut res: Vec<u8> = Vec::new();
+        try!(stream.read_to_end(&mut res)
+             .map_err(|e| format!("Unable to read from TCP stream: {}", e)));
+        res.push(0);
+        process_result(res)
+    }
+
+    pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
+        let res = try!(self.cmd(cmd));
+        serde_json::from_str(&res).map_err(|e| format!("Unable to parse json: {}", e))
+    }
+
+    pub fn close(&mut self) {}
 }
