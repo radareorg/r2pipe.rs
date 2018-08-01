@@ -2,8 +2,6 @@
 //!
 //! Please check crate level documentation for more details and example.
 
-use std::os::unix::io::FromRawFd;
-
 use libc;
 use std::process::Command;
 use std::process::Stdio;
@@ -99,7 +97,10 @@ macro_rules! open_pipe {
 }
 
 impl R2Pipe {
+    #[cfg(not(windows))]
     pub fn open() -> Result<R2Pipe, &'static str> {
+        use std::os::unix::io::FromRawFd;
+
         let (f_in, f_out) = match R2Pipe::in_session() {
             Some(x) => x,
             None => return Err("Pipe not open. Please run from r2"),
@@ -113,6 +114,11 @@ impl R2Pipe {
             }
         };
         Ok(R2Pipe::Lang(res))
+    }
+
+    #[cfg(windows)]
+    pub fn open() -> Result<R2Pipe, &'static str> {
+        Err("`open()` is not yet supported on windows")
     }
 
     pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
