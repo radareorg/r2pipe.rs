@@ -15,7 +15,6 @@ repository. Please make sure you update your dependencies and imports.
 TODO
 ----
 * Support async API
-* Support HTTP connectivity
 * Add custom r2 start flags for spawn method
 * Better error handling
 
