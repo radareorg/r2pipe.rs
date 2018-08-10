@@ -2,6 +2,8 @@
 //!
 //! Please check crate level documentation for more details and example.
 
+use reqwest;
+
 use libc;
 use std::process::Command;
 use std::process::Stdio;
@@ -35,6 +37,10 @@ pub struct R2PipeTcp {
     socket_addr: SocketAddr,
 }
 
+pub struct R2PipeHttp {
+    host: String,
+}
+
 #[derive(Default)]
 pub struct R2PipeSpawnOptions {
     pub exepath: String,
@@ -46,6 +52,7 @@ pub enum R2Pipe {
     Pipe(R2PipeSpawn),
     Lang(R2PipeLang),
     Tcp(R2PipeTcp),
+    Http(R2PipeHttp),
 }
 
 fn atoi(k: &str) -> i32 {
@@ -126,6 +133,7 @@ impl R2Pipe {
             R2Pipe::Pipe(ref mut x) => x.cmd(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmd(cmd.trim()),
             R2Pipe::Tcp(ref mut x) => x.cmd(cmd.trim()),
+            R2Pipe::Http(ref mut x) => x.cmd(cmd.trim()),
         }
     }
 
@@ -134,6 +142,7 @@ impl R2Pipe {
             R2Pipe::Pipe(ref mut x) => x.cmdj(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmdj(cmd.trim()),
             R2Pipe::Tcp(ref mut x) => x.cmdj(cmd.trim()),
+            R2Pipe::Http(ref mut x) => x.cmdj(cmd.trim()),
         }
     }
 
@@ -142,6 +151,7 @@ impl R2Pipe {
             R2Pipe::Pipe(ref mut x) => x.close(),
             R2Pipe::Lang(ref mut x) => x.close(),
             R2Pipe::Tcp(ref mut x) => x.close(),
+            R2Pipe::Http(ref mut x) => x.close(),
         }
     }
 
@@ -212,6 +222,11 @@ impl R2Pipe {
         let addr = try!(stream.peer_addr().map_err(|_| "Unable to get peer address"));
         Ok(R2Pipe::Tcp(R2PipeTcp { socket_addr: addr }))
     }
+
+    /// Creates a new R2PipeHttp
+    pub fn http(host: &str) -> Result<R2Pipe, &'static str> {
+        Ok(R2Pipe::Http(R2PipeHttp { host: host.to_string() }))
+    }
 }
 
 impl R2PipeSpawn {
@@ -273,6 +288,29 @@ impl R2PipeLang {
         // self.read.close();
         // self.write.close();
     }
+}
+
+impl R2PipeHttp {
+
+    pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
+        let url = format!("http://{}/cmd/{}", self.host, cmd);
+        let res = reqwest::get(&url).unwrap();
+        let bytes = res.bytes()
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .collect::<Vec<_>>();
+        str::from_utf8(bytes.as_slice())
+            .map(|s| s.to_string())
+            .map_err(|err| err.to_string())
+    }
+
+    pub fn cmdj(&mut self, cmd: &str) -> Result<Value ,String> {
+        let res = try!(self.cmd(cmd));
+        serde_json::from_str(&res)
+            .map_err(|e| format!("Unable to parse json: {}", e))
+    }
+
+    pub fn close(&mut self) {}
 }
 
 impl R2PipeTcp {
