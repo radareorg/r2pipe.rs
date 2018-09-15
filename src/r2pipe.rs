@@ -15,6 +15,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::net::{TcpStream, ToSocketAddrs, SocketAddr};
+use std::thread;
+use std::sync::mpsc;
 
 use serde_json;
 use serde_json::Value;
@@ -41,7 +43,14 @@ pub struct R2PipeHttp {
     host: String,
 }
 
-#[derive(Default)]
+pub struct R2PipeThread {
+	r2recv: mpsc::Receiver<String>,
+	r2send: mpsc::Sender<String>,
+	pub id: u16,
+	pub handle: thread::JoinHandle<()>,
+}
+
+#[derive(Default, Clone)]
 pub struct R2PipeSpawnOptions {
     pub exepath: String,
     pub args: Vec<&'static str>,
@@ -227,6 +236,60 @@ impl R2Pipe {
     pub fn http(host: &str) -> Result<R2Pipe, &'static str> {
         Ok(R2Pipe::Http(R2PipeHttp { host: host.to_string() }))
     }
+	
+	/// Creates new pipe threads
+	pub fn threads(names: Vec<&'static str>, opts: Vec<Option<R2PipeSpawnOptions>>)
+	-> Result<Vec<R2PipeThread>, &'static str> {
+		if names.len() != opts.len() { 
+			return Err("Please provide 2 Vectors of the same size for names and options");
+		}
+
+		let mut pipes = Vec::new();
+
+		for n in 0..names.len() {
+			let (tx, rx) = mpsc::channel();
+			let (htx, hrx) = mpsc::channel();
+			let name = names[n];
+			let opt = opts[n].clone();
+			let t = thread::spawn(move || {
+				let mut r2 = R2Pipe::spawn(name, opt).unwrap();
+				loop {
+					let cmd = String::from(hrx.recv().unwrap());
+					if cmd == "q" { break; }
+					let res = r2.cmdj(&cmd).unwrap().to_string();
+					tx.send(res).unwrap();
+				}
+			});
+			pipes.push(R2PipeThread { r2recv: rx, r2send: htx, id: n as u16, handle: t });
+		}
+		Ok(pipes)
+	}	
+}
+
+impl R2PipeThread {
+	pub fn send(&self, cmd: String) -> Result<(), String> {
+		if let Ok(_) = self.r2send.send(cmd) {
+			Ok(())
+		} else {
+			Err(String::from("Send Error!"))
+		}
+	}
+
+	pub fn recv(&self, block: bool) -> Result<String, String> {
+		if block {
+			if let Ok(result) = self.r2recv.recv() {
+				Ok(result)
+			} else {
+				Err(String::from("Receive Error!"))
+			}
+		} else {
+			if let Ok(result) = self.r2recv.try_recv() {
+				Ok(result)
+			} else {
+				Err(String::from("Receive Error!"))
+			}
+		}
+	}
 }
 
 impl R2PipeSpawn {
