@@ -46,6 +46,9 @@
 //!     r2p.close();
 //! }
 //! ```
+//! 
+//! The crate offers various methods to interact with r2pipe, eg. via process (multi-threadable), http or tcp.
+//! Check the examples/ dir for more complete examples.
 
 #![doc(html_root_url = "https://radare.github.io/r2pipe.rs/")]
 

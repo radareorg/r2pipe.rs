@@ -3,8 +3,9 @@ use r2pipe::R2Pipe;
 
 fn main() {
 	// Lets spawn some r2pipes to open some binaries
-	// Arguments for thread() are the same as for spawn() but as vectors
-	let pipes = match R2Pipe::threads(vec!["/bin/ls","/bin/id","/bin/cat"], vec![None,None,None]) {
+	// First two arguments for R2Pipe::threads() are the same as for R2Pipe::spawn() but inside vectors
+	// Third and last argument is an option of a callback function
+	let pipes = match R2Pipe::threads(vec!["/bin/ls","/bin/id","/bin/cat"], vec![None,None,None], None) {
 		Ok(p) => p,
 		Err(e) => { println!("Error spawning Pipes: {}", e); return; }
 	};

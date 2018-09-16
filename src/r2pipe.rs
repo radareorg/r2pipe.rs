@@ -17,6 +17,7 @@ use std::io::BufReader;
 use std::net::{TcpStream, ToSocketAddrs, SocketAddr};
 use std::thread;
 use std::sync::mpsc;
+use std::sync::Arc;
 
 use serde_json;
 use serde_json::Value;
@@ -43,6 +44,9 @@ pub struct R2PipeHttp {
     host: String,
 }
 
+/// Stores thread metadata
+/// It stores both a sending and receiving end to the thread, allowing convenient interaction
+/// So we can send commands using R2PipeThread::send() and fetch outputs using R2PipeThread::recv()
 pub struct R2PipeThread {
 	r2recv: mpsc::Receiver<String>,
 	r2send: mpsc::Sender<String>,
@@ -238,7 +242,11 @@ impl R2Pipe {
     }
 	
 	/// Creates new pipe threads
-	pub fn threads(names: Vec<&'static str>, opts: Vec<Option<R2PipeSpawnOptions>>)
+	/// First two arguments for R2Pipe::threads() are the same as for R2Pipe::spawn() but inside vectors
+	/// Third and last argument is an option to a callback function
+	/// The callback function takes two Arguments: Thread ID and r2pipe output
+	pub fn threads(names: Vec<&'static str>, opts: Vec<Option<R2PipeSpawnOptions>>,
+	callback: Option<Arc<Fn(u16, String)+Sync+Send>>)
 	-> Result<Vec<R2PipeThread>, &'static str> {
 		if names.len() != opts.len() { 
 			return Err("Please provide 2 Vectors of the same size for names and options");
@@ -247,20 +255,22 @@ impl R2Pipe {
 		let mut pipes = Vec::new();
 
 		for n in 0..names.len() {
-			let (tx, rx) = mpsc::channel();
-			let (htx, hrx) = mpsc::channel();
+			let (htx, rx) = mpsc::channel();
+			let (tx, hrx) = mpsc::channel();
 			let name = names[n];
 			let opt = opts[n].clone();
+			let cb = callback.clone();
 			let t = thread::spawn(move || {
 				let mut r2 = R2Pipe::spawn(name, opt).unwrap();
 				loop {
 					let cmd = String::from(hrx.recv().unwrap());
 					if cmd == "q" { break; }
 					let res = r2.cmdj(&cmd).unwrap().to_string();
-					tx.send(res).unwrap();
+					htx.send(res.clone()).unwrap();
+					if let Some(cbs) = cb.clone() { thread::spawn(move || { cbs(n as u16, res);	}); };
 				}
 			});
-			pipes.push(R2PipeThread { r2recv: rx, r2send: htx, id: n as u16, handle: t });
+			pipes.push(R2PipeThread { r2recv: rx, r2send: tx, id: n as u16, handle: t });
 		}
 		Ok(pipes)
 	}	
@@ -268,27 +278,16 @@ impl R2Pipe {
 
 impl R2PipeThread {
 	pub fn send(&self, cmd: String) -> Result<(), String> {
-		if let Ok(_) = self.r2send.send(cmd) {
-			Ok(())
-		} else {
-			Err(String::from("Send Error!"))
-		}
+		if let Ok(val) = self.r2send.send(cmd) { return Ok(val) };
+		Err("Send Error!".to_string())
 	}
 
 	pub fn recv(&self, block: bool) -> Result<String, String> {
-		if block {
-			if let Ok(result) = self.r2recv.recv() {
-				Ok(result)
-			} else {
-				Err(String::from("Receive Error!"))
-			}
-		} else {
-			if let Ok(result) = self.r2recv.try_recv() {
-				Ok(result)
-			} else {
-				Err(String::from("Receive Error!"))
-			}
-		}
+		match block {
+			true => if let Ok(val) = self.r2recv.recv() { return Ok(val) },
+			false => if let Ok(val) = self.r2recv.try_recv() { return Ok(val) }
+		};
+		Err("Receive Error!".to_string())
 	}
 }
 
