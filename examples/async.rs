@@ -14,7 +14,7 @@ pub struct R2PipeAsync {
     rx: Receiver<String>,
     tx2: Sender<String>,
     rx2: Receiver<String>,
-    cbs: Vec<Arc<Fn(String)>>,
+    cbs: Vec<Arc<dyn Fn(String)>>,
 }
 
 impl R2PipeAsync {
@@ -30,7 +30,7 @@ impl R2PipeAsync {
         }
     }
 
-    pub fn cmd(&mut self, str: &'static str, cb: Arc<Fn(String)>) {
+    pub fn cmd(&mut self, str: &'static str, cb: Arc<dyn Fn(String)>) {
         self.cbs.insert(0, cb);
         self.tx.send(str.to_string()).unwrap();
     }

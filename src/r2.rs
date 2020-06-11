@@ -13,7 +13,6 @@
 
 use r2pipe::R2Pipe;
 use serde_json;
-use serde_json::Error;
 use serde_json::Value;
 
 pub struct R2 {
@@ -41,16 +40,13 @@ impl R2 {
         // This means that path is `Some` or we have an open session.
         let pipe = open_pipe!(path.as_ref()).unwrap();
         Ok(R2 {
-            pipe: pipe,
+            pipe,
             readin: String::new(),
         })
     }
 
     pub fn in_session() -> bool {
-        match R2Pipe::in_session() {
-            Some(_) => true,
-            None => false,
-        }
+        R2Pipe::in_session().is_some()
     }
 
     pub fn from(r2p: R2Pipe) -> R2 {

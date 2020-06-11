@@ -3,9 +3,6 @@ extern crate serde_json;
 
 use r2pipe::R2Pipe;
 use r2pipe::R2PipeSpawnOptions;
-use std::process;
-
-use serde_json::Value;
 
 fn test_trim() {
     let mut ns = R2Pipe::spawn("/bin/ls".to_owned(), None).unwrap();
