@@ -1,7 +1,13 @@
+![R2pipe Rust CI](https://github.com/radareorg/r2pipe.rs/workflows/R2pipe%20Rust%20CI/badge.svg)
+[![Travis](https://travis-ci.org/radareorg/r2pipe.rs.svg?branch=master)](https://travis-ci.org/radareorg/r2pipe.rs)
+[![Documentation](https://docs.rs/r2pipe/badge.svg)](https://docs.rs/r2pipe)
+[![Cargo](https://img.shields.io/crates/v/r2pipe.svg)](https://crates.io/crates/r2pipe)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](
+https://github.com/radareorg/r2pipe.rs)
+
 r2pipe.rs
 =========
 
-| **TravisCI** 	| [![Build Status](https://travis-ci.org/radareorg/r2pipe.rs.svg?branch=master)](https://travis-ci.org/radareorg/r2pipe.rs)|
 
 The Rust Crate to interact with radare2.
 Please check [Documentation](https://radare.github.io/r2pipe.rs) to get
@@ -14,7 +20,7 @@ repository. Please make sure you update your dependencies and imports.
 
 TODO
 ----
-* Support async API
+* Support futures API
 * Add custom r2 start flags for spawn method
 * Better error handling
 
