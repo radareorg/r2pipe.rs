@@ -46,23 +46,17 @@
 //!     r2p.close();
 //! }
 //! ```
-//! 
+//!
 //! The crate offers various methods to interact with r2pipe, eg. via process (multi-threadable), http or tcp.
 //! Check the examples/ dir for more complete examples.
 
 #![doc(html_root_url = "https://radare.github.io/r2pipe.rs/")]
-
-extern crate libc;
-extern crate serde;
-extern crate serde_json;
-extern crate serde_derive;
-extern crate reqwest;
 
 #[macro_use]
 pub mod r2pipe;
 pub mod r2;
 
 // Rexport to bring it out one module.
-pub use self::r2pipe::R2PipeSpawnOptions;
-pub use self::r2pipe::R2Pipe;
 pub use self::r2::R2;
+pub use self::r2pipe::R2Pipe;
+pub use self::r2pipe::R2PipeSpawnOptions;

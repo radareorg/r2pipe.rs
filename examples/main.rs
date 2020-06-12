@@ -1,5 +1,4 @@
-extern crate r2pipe;
-extern crate serde_json;
+use serde_json;
 
 use r2pipe::R2Pipe;
 use r2pipe::R2PipeSpawnOptions;
@@ -10,7 +9,7 @@ fn test_trim() {
     println!("(({}))", ns.cmd("\n\n?e hello world\n\n").unwrap());
     println!("(({}))", ns.cmd("\n\n?e hello world\n\n").unwrap());
     ns.close();
-//    process::exit(0);
+    //    process::exit(0);
 }
 
 fn main() {
@@ -22,10 +21,10 @@ fn main() {
         ..Default::default()
     };
     let mut r2p = match R2Pipe::in_session() {
-            Some(_) => R2Pipe::open(),
-            None => R2Pipe::spawn("/bin/ls".to_owned(), Some(opts)),
-        }
-        .unwrap();
+        Some(_) => R2Pipe::open(),
+        None => R2Pipe::spawn("/bin/ls".to_owned(), Some(opts)),
+    }
+    .unwrap();
 
     println!("{}", r2p.cmd("?e Hello World").unwrap());
 

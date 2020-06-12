@@ -1,11 +1,10 @@
-extern crate r2pipe;
 use r2pipe::R2Pipe;
 
-use std::thread;
-use std::sync::Arc;
 use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
+use std::sync::mpsc::Sender;
+use std::sync::Arc;
+use std::thread;
 
 const FILENAME: &'static str = "/bin/ls";
 
@@ -44,10 +43,10 @@ impl R2PipeAsync {
         let child_tx = self.tx2.clone();
         let child = thread::spawn(move || {
             let mut r2p = match R2Pipe::in_session() {
-                    Some(_) => R2Pipe::open(),
-                    None => R2Pipe::spawn(FILENAME.to_owned(), None),
-                }
-                .unwrap();
+                Some(_) => R2Pipe::open(),
+                None => R2Pipe::spawn(FILENAME.to_owned(), None),
+            }
+            .unwrap();
             loop {
                 let msg = child_rx.recv().unwrap();
                 if msg == "q" {
@@ -82,14 +81,18 @@ impl R2PipeAsync {
 
 fn main() {
     let mut r2pa = R2PipeAsync::open();
-    r2pa.cmd("?e One",
-             Arc::new(|x| {
-                 println!("One: {}", x);
-             }));
-    r2pa.cmd("?e Two",
-             Arc::new(|x| {
-                 println!("Two: {}", x);
-             }));
+    r2pa.cmd(
+        "?e One",
+        Arc::new(|x| {
+            println!("One: {}", x);
+        }),
+    );
+    r2pa.cmd(
+        "?e Two",
+        Arc::new(|x| {
+            println!("Two: {}", x);
+        }),
+    );
     r2pa.quit();
     r2pa.mainloop();
 }
