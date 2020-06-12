@@ -11,7 +11,7 @@
 //! contribute to the r2pipe.rs-frontend project. This aims to be a 
 //! barebones implementation of the pipe concept.
 
-use r2pipe::R2Pipe;
+use crate::r2pipe::R2Pipe;
 use serde_json;
 use serde_json::Value;
 

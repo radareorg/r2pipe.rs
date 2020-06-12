@@ -5,19 +5,19 @@
 use reqwest;
 
 use libc;
-use std::process::Command;
-use std::process::Stdio;
-use std::process;
 use std::env;
-use std::str;
-use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::net::{TcpStream, ToSocketAddrs, SocketAddr};
-use std::thread;
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+use std::path::Path;
+use std::process;
+use std::process::Command;
+use std::process::Stdio;
+use std::str;
 use std::sync::mpsc;
 use std::sync::Arc;
+use std::thread;
 
 use serde_json;
 use serde_json::Value;
@@ -47,10 +47,10 @@ pub struct R2PipeHttp {
 /// It stores both a sending and receiving end to the thread, allowing convenient interaction
 /// So we can send commands using R2PipeThread::send() and fetch outputs using R2PipeThread::recv()
 pub struct R2PipeThread {
-	r2recv: mpsc::Receiver<String>,
-	r2send: mpsc::Sender<String>,
-	pub id: u16,
-	pub handle: thread::JoinHandle<()>,
+    r2recv: mpsc::Receiver<String>,
+    r2send: mpsc::Sender<String>,
+    pub id: u16,
+    pub handle: thread::JoinHandle<()>,
 }
 
 #[derive(Default, Clone)]
@@ -84,7 +84,7 @@ fn getenv(k: &str) -> i32 {
 fn process_result(res: Vec<u8>) -> Result<String, String> {
     let len = res.len();
     if len == 0 {
-        return Err("Failed".to_string())
+        return Err("Failed".to_string());
     }
     let result = str::from_utf8(&res[..len - 1])
         .map_err(|e| e.to_string())?
@@ -181,7 +181,10 @@ impl R2Pipe {
     }
 
     /// Creates a new R2PipeSpawn.
-    pub fn spawn<T: AsRef<str>>(name: T, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe, &'static str> {
+    pub fn spawn<T: AsRef<str>>(
+        name: T,
+        opts: Option<R2PipeSpawnOptions>,
+    ) -> Result<R2Pipe, &'static str> {
         if name.as_ref() == "" && R2Pipe::in_session().is_some() {
             return R2Pipe::open();
         }
@@ -223,70 +226,90 @@ impl R2Pipe {
     pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<R2Pipe, &'static str> {
         // use `connect` to figure out which socket address works
         let stream = TcpStream::connect(addr).map_err(|_| "Unable to connect TCP stream")?;
-        let addr = stream.peer_addr().map_err(|_| "Unable to get peer address")?;
+        let addr = stream
+            .peer_addr()
+            .map_err(|_| "Unable to get peer address")?;
         Ok(R2Pipe::Tcp(R2PipeTcp { socket_addr: addr }))
     }
 
     /// Creates a new R2PipeHttp
     pub fn http(host: &str) -> Result<R2Pipe, &'static str> {
-        Ok(R2Pipe::Http(R2PipeHttp { host: host.to_string() }))
+        Ok(R2Pipe::Http(R2PipeHttp {
+            host: host.to_string(),
+        }))
     }
-	
-	/// Creates new pipe threads
-	/// First two arguments for R2Pipe::threads() are the same as for R2Pipe::spawn() but inside vectors
-	/// Third and last argument is an option to a callback function
-	/// The callback function takes two Arguments: Thread ID and r2pipe output
-	pub fn threads(names: Vec<&'static str>, opts: Vec<Option<R2PipeSpawnOptions>>, callback: Option<Arc<dyn Fn(u16, String)+Sync+Send>>)
-	    -> Result<Vec<R2PipeThread>, &'static str> {
-		if names.len() != opts.len() { 
-			return Err("Please provide 2 Vectors of the same size for names and options");
-		}
 
-		let mut pipes = Vec::new();
+    /// Creates new pipe threads
+    /// First two arguments for R2Pipe::threads() are the same as for R2Pipe::spawn() but inside vectors
+    /// Third and last argument is an option to a callback function
+    /// The callback function takes two Arguments: Thread ID and r2pipe output
+    pub fn threads(
+        names: Vec<&'static str>,
+        opts: Vec<Option<R2PipeSpawnOptions>>,
+        callback: Option<Arc<dyn Fn(u16, String) + Sync + Send>>,
+    ) -> Result<Vec<R2PipeThread>, &'static str> {
+        if names.len() != opts.len() {
+            return Err("Please provide 2 Vectors of the same size for names and options");
+        }
 
-		for n in 0..names.len() {
-			let (htx, rx) = mpsc::channel();
-			let (tx, hrx) = mpsc::channel();
-			let name = names[n];
-			let opt = opts[n].clone();
-			let cb = callback.clone();
-			let t = thread::spawn(move || {
-				let mut r2 = R2Pipe::spawn(name, opt).unwrap();
-				loop {
-					let cmd: String = hrx.recv().unwrap();
-					if cmd == "q" { break; }
-					let res = r2.cmdj(&cmd).unwrap().to_string();
-					htx.send(res.clone()).unwrap();
-					if let Some(cbs) = cb.clone() { thread::spawn(move || { cbs(n as u16, res);	}); };
-				}
-			});
-			pipes.push(R2PipeThread { r2recv: rx, r2send: tx, id: n as u16, handle: t });
-		}
-		Ok(pipes)
-	}	
+        let mut pipes = Vec::new();
+
+        for n in 0..names.len() {
+            let (htx, rx) = mpsc::channel();
+            let (tx, hrx) = mpsc::channel();
+            let name = names[n];
+            let opt = opts[n].clone();
+            let cb = callback.clone();
+            let t = thread::spawn(move || {
+                let mut r2 = R2Pipe::spawn(name, opt).unwrap();
+                loop {
+                    let cmd: String = hrx.recv().unwrap();
+                    if cmd == "q" {
+                        break;
+                    }
+                    let res = r2.cmdj(&cmd).unwrap().to_string();
+                    htx.send(res.clone()).unwrap();
+                    if let Some(cbs) = cb.clone() {
+                        thread::spawn(move || {
+                            cbs(n as u16, res);
+                        });
+                    };
+                }
+            });
+            pipes.push(R2PipeThread {
+                r2recv: rx,
+                r2send: tx,
+                id: n as u16,
+                handle: t,
+            });
+        }
+        Ok(pipes)
+    }
 }
 
 impl R2PipeThread {
-	pub fn send(&self, cmd: String) -> Result<(), &'static str> {
+    pub fn send(&self, cmd: String) -> Result<(), &'static str> {
         self.r2send.send(cmd).map_err(|_| "Channel send error")
-	}
+    }
 
-	pub fn recv(&self, block: bool) -> Result<String, &'static str> {
-		if block {
-            return self.r2recv.recv().map_err(|_| "Channel recv error")
+    pub fn recv(&self, block: bool) -> Result<String, &'static str> {
+        if block {
+            return self.r2recv.recv().map_err(|_| "Channel recv error");
         }
-		self.r2recv.try_recv().map_err(|_| "Channel try_recv error")
-	}
+        self.r2recv.try_recv().map_err(|_| "Channel try_recv error")
+    }
 }
 
 impl R2PipeSpawn {
     pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
         let cmd = cmd.to_owned() + "\n";
-        self.write.write_all(cmd.as_bytes())
+        self.write
+            .write_all(cmd.as_bytes())
             .map_err(|e| e.to_string())?;
 
         let mut res: Vec<u8> = Vec::new();
-        self.read.read_until(0u8, &mut res)
+        self.read
+            .read_until(0u8, &mut res)
             .map_err(|e| e.to_string())?;
         process_result(res)
     }
@@ -294,10 +317,9 @@ impl R2PipeSpawn {
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         let result = self.cmd(cmd)?;
         if result == "" {
-            return Err("Empty JSON".to_string())
+            return Err("Empty JSON".to_string());
         }
-        serde_json::from_str(&result)
-            .map_err(|e| e.to_string())
+        serde_json::from_str(&result).map_err(|e| e.to_string())
     }
 
     pub fn close(&mut self) {
@@ -316,8 +338,7 @@ impl R2PipeLang {
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         let res = self.cmd(cmd)?;
 
-        serde_json::from_str(&res)
-            .map_err(|e| e.to_string())
+        serde_json::from_str(&res).map_err(|e| e.to_string())
     }
 
     pub fn close(&mut self) {
@@ -327,22 +348,18 @@ impl R2PipeLang {
 }
 
 impl R2PipeHttp {
-
     pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
         let url = format!("http://{}/cmd/{}", self.host, cmd);
         let res = reqwest::get(&url).unwrap();
-        let bytes = res.bytes()
-            .filter_map(|e| e.ok())
-            .collect::<Vec<_>>();
+        let bytes = res.bytes().filter_map(|e| e.ok()).collect::<Vec<_>>();
         str::from_utf8(bytes.as_slice())
             .map(|s| s.to_string())
             .map_err(|err| err.to_string())
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Value ,String> {
+    pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         let res = self.cmd(cmd)?;
-        serde_json::from_str(&res)
-            .map_err(|e| format!("Unable to parse json: {}", e))
+        serde_json::from_str(&res).map_err(|e| format!("Unable to parse json: {}", e))
     }
 
     pub fn close(&mut self) {}
@@ -352,10 +369,12 @@ impl R2PipeTcp {
     pub fn cmd(&mut self, cmd: &str) -> Result<String, String> {
         let mut stream = TcpStream::connect(self.socket_addr)
             .map_err(|e| format!("Unable to connect TCP stream: {}", e))?;
-        stream.write_all(cmd.as_bytes())
+        stream
+            .write_all(cmd.as_bytes())
             .map_err(|e| format!("Unable to write to TCP stream: {}", e))?;
         let mut res: Vec<u8> = Vec::new();
-        stream.read_to_end(&mut res)
+        stream
+            .read_to_end(&mut res)
             .map_err(|e| format!("Unable to read from TCP stream: {}", e))?;
         res.push(0);
         process_result(res)

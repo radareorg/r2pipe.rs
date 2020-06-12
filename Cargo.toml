@@ -5,7 +5,7 @@ authors = [
   "pancake <pancake@nopcode.org>",
   "sushant94 <sushant.dinesh94@gmail.com>"
 ]
-
+edition = "2018"
 description = "Library to interact with radare2 using r2pipes."
 
 # Repository
@@ -25,7 +25,7 @@ default = []
 
 [dependencies]
 libc = "*"
-serde = "1.0.111"
-serde_json = "1.0.55"
-serde_derive = "1.0.111"
-reqwest = "0.9.22"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+reqwest = "0.9"
