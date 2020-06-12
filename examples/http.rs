@@ -1,5 +1,4 @@
-extern crate r2pipe;
-extern crate serde_json;
+use serde_json;
 
 use r2pipe::R2Pipe;
 

@@ -8,7 +8,7 @@
 //! Few functions for initialization, communication and termination of r2.
 //!
 //! If you wish to write wrappers for certain r2 functionalities,
-//! contribute to the r2pipe.rs-frontend project. This aims to be a 
+//! contribute to the r2pipe.rs-frontend project. This aims to be a
 //! barebones implementation of the pipe concept.
 
 use crate::r2pipe::R2Pipe;
