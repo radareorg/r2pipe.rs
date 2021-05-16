@@ -5,7 +5,6 @@
 #[cfg(feature = "http")]
 use reqwest;
 
-use libc;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -20,7 +19,6 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
 
-use serde_json;
 use serde_json::Value;
 
 /// File descriptors to the parent r2 process.

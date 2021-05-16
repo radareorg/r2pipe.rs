@@ -12,7 +12,6 @@
 //! barebones implementation of the pipe concept.
 
 use crate::r2pipe::R2Pipe;
-use serde_json;
 use serde_json::Value;
 
 pub struct R2 {
