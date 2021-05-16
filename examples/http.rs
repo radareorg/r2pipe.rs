@@ -1,8 +1,8 @@
 fn main() {
     #[cfg(feature = "http")]
     {
-        use serde_json;
         use r2pipe::R2Pipe;
+        use serde_json;
 
         let mut r2p = R2Pipe::http("http://localhost:9080").unwrap();
 
