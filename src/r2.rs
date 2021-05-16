@@ -11,7 +11,7 @@
 //! contribute to the r2pipe.rs-frontend project. This aims to be a
 //! barebones implementation of the pipe concept.
 
-use crate::r2pipe::R2Pipe;
+use crate::{r2pipe::R2Pipe, Error, Result};
 use serde_json::Value;
 
 pub struct R2 {
@@ -29,15 +29,13 @@ impl Default for R2 {
 // i.e. The ones that are not currently abstracted by the R2 API.
 // Ideally, all commonly used commands must be supported for easier use.
 impl R2 {
-    // TODO: Use an error type
-    pub fn new<T: AsRef<str>>(path: Option<T>) -> Result<R2, String> {
+    pub fn new<T: AsRef<str>>(path: Option<T>) -> Result<R2> {
         if path.is_none() && !R2::in_session() {
-            let e = "No r2 session open. Please specify path!".to_owned();
-            return Err(e);
+            return Err(Error::NoSession);
         }
 
         // This means that path is `Some` or we have an open session.
-        let pipe = open_pipe!(path.as_ref()).unwrap();
+        let pipe = open_pipe!(path.as_ref())?;
         Ok(R2 {
             pipe,
             readin: String::new(),
@@ -55,12 +53,14 @@ impl R2 {
         }
     }
 
-    pub fn close(&mut self) {
-        self.send("q!");
+    pub fn close(&mut self) -> Result<()> {
+        self.send("q!")?;
+        Ok(())
     }
 
-    pub fn send(&mut self, cmd: &str) {
-        self.readin = self.pipe.cmd(cmd).unwrap();
+    pub fn send(&mut self, cmd: &str) -> Result<()> {
+        self.readin = self.pipe.cmd(cmd)?;
+        Ok(())
     }
 
     pub fn recv(&mut self) -> String {
@@ -69,14 +69,13 @@ impl R2 {
         res
     }
 
-    pub fn recv_json(&mut self) -> Value {
+    pub fn recv_json(&mut self) -> Result<Value> {
         let mut res = self.recv().replace("\n", "");
         if res.is_empty() {
             res = "{}".to_owned();
         }
 
-        // TODO: this should probably return a Result<Value, Error>
-        serde_json::from_str(&res).unwrap()
+        Ok(serde_json::from_str(&res)?)
     }
 
     pub fn flush(&mut self) {

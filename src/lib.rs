@@ -57,6 +57,12 @@
 pub mod r2pipe;
 pub mod r2;
 
+mod error;
+pub use error::*;
+
+#[doc(hidden)]
+pub type Result<T> = std::result::Result<T, error::Error>;
+
 // Rexport to bring it out one module.
 pub use self::r2::R2;
 pub use self::r2pipe::R2Pipe;
