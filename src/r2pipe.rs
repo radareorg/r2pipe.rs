@@ -5,7 +5,6 @@
 #[cfg(feature = "http")]
 use reqwest;
 
-use libc;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -20,7 +19,6 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
 
-use serde_json;
 use serde_json::Value;
 
 /// File descriptors to the parent r2 process.
@@ -73,10 +71,7 @@ pub enum R2Pipe {
 }
 
 fn atoi(k: &str) -> i32 {
-    match k.parse::<i32>() {
-        Ok(val) => val,
-        Err(_) => -1,
-    }
+    k.parse::<i32>().unwrap_or(-1)
 }
 
 fn getenv(k: &str) -> i32 {
@@ -326,7 +321,7 @@ impl R2PipeSpawn {
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value, String> {
         let result = self.cmd(cmd)?;
-        if result == "" {
+        if result.is_empty() {
             return Err("Empty JSON".to_string());
         }
         serde_json::from_str(&result).map_err(|e| e.to_string())
