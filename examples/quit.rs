@@ -1,8 +1,8 @@
-use r2pipe::R2Pipe;
+use r2pipe::{R2Pipe, Result};
 
-fn main() {
-    let mut r2p = R2Pipe::spawn("/bin/ls".to_owned(), None).unwrap();
-    println!("{}", r2p.cmd("?e Hello").unwrap());
+fn main() -> Result<()> {
+    let mut r2p = R2Pipe::spawn("/bin/ls".to_owned(), None)?;
+    println!("{}", r2p.cmd("?e Hello")?);
     if let Err(_) = r2p.cmd("q") {
         // !killall r2") {
         println!("Quit happens!");
@@ -16,4 +16,5 @@ fn main() {
         }
     }
     println!("Byebye");
+    Ok(())
 }
