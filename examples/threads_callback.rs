@@ -1,7 +1,7 @@
-use r2pipe::R2Pipe;
+use r2pipe::{R2Pipe, Result};
 use std::sync::Arc;
 
-fn main() {
+fn main() -> Result<()> {
     // First we define a callback. It doesn't block and gets called after a thread receives output from r2pipe
     // Note: First argument to the callback is the thread id, second one the r2pipe output
     let callback = Arc::new(|id, result| {
@@ -19,7 +19,7 @@ fn main() {
         Ok(p) => p,
         Err(e) => {
             println!("Error spawning Pipes: {}", e);
-            return;
+            return Ok(());
         }
     };
 
@@ -35,6 +35,8 @@ fn main() {
     // Note: For "join()" we need to borrow so pipes.iter() won't work for this
     for p in pipes {
         if let Ok(_) = p.send("q".to_string()) {};
-        p.handle.join().unwrap();
+        p.handle.join().unwrap()?;
     }
+
+    Ok(())
 }

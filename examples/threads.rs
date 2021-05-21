@@ -1,6 +1,6 @@
-use r2pipe::R2Pipe;
+use r2pipe::{R2Pipe, Result};
 
-fn main() {
+fn main() -> Result<()> {
     // Lets spawn some r2pipes to open some binaries
     // First two arguments for R2Pipe::threads() are the same as for R2Pipe::spawn() but inside vectors
     // Third and last argument is an option of a callback function
@@ -12,7 +12,7 @@ fn main() {
         Ok(p) => p,
         Err(e) => {
             println!("Error spawning Pipes: {}", e);
-            return;
+            return Ok(());
         }
     };
 
@@ -35,6 +35,8 @@ fn main() {
     // Note: For "join()" we need to borrow so pipes.iter() won't work for this
     for p in pipes {
         if let Ok(_) = p.send("q".to_string()) {};
-        p.handle.join().unwrap();
+        p.handle.join().unwrap()?;
     }
+
+    Ok(())
 }
