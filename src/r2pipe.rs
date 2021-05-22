@@ -33,6 +33,7 @@ pub struct R2PipeLang {
 pub struct R2PipeSpawn {
     read: BufReader<process::ChildStdout>,
     write: process::ChildStdin,
+    child: process::Child,
 }
 
 /// Stores the socket address of the r2 process.
@@ -196,7 +197,7 @@ impl R2Pipe {
             _ => vec![],
         };
         let path = Path::new(name.as_ref());
-        let child = Command::new(exepath)
+        let mut child = Command::new(exepath)
             .arg("-q0")
             .args(&args)
             .arg(path)
@@ -205,8 +206,8 @@ impl R2Pipe {
             .spawn()?;
 
         // If stdin/stdout is not available, hard error
-        let sin = child.stdin.unwrap();
-        let mut sout = child.stdout.unwrap();
+        let sin = child.stdin.take().unwrap();
+        let mut sout = child.stdout.take().unwrap();
 
         // flush out the initial null byte.
         let mut w = [0; 1];
@@ -215,6 +216,7 @@ impl R2Pipe {
         let res = R2PipeSpawn {
             read: BufReader::new(sout),
             write: sin,
+            child,
         };
 
         Ok(R2Pipe::Pipe(res))
@@ -320,6 +322,7 @@ impl R2PipeSpawn {
 
     pub fn close(&mut self) {
         let _ = self.cmd("q!");
+        let _ = self.child.wait();
     }
 }
 
