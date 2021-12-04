@@ -4,9 +4,6 @@
 
 use crate::{Error, Result};
 
-#[cfg(feature = "http")]
-use reqwest;
-
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -41,8 +38,6 @@ pub struct R2PipeTcp {
     socket_addr: SocketAddr,
 }
 
-#[cfg(feature = "http")]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "http")))]
 pub struct R2PipeHttp {
     host: String,
 }
@@ -68,8 +63,6 @@ pub enum R2Pipe {
     Pipe(R2PipeSpawn),
     Lang(R2PipeLang),
     Tcp(R2PipeTcp),
-    #[cfg(feature = "http")]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "http")))]
     Http(R2PipeHttp),
 }
 
@@ -140,7 +133,6 @@ impl R2Pipe {
             R2Pipe::Pipe(ref mut x) => x.cmd(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmd(cmd.trim()),
             R2Pipe::Tcp(ref mut x) => x.cmd(cmd.trim()),
-            #[cfg(feature = "http")]
             R2Pipe::Http(ref mut x) => x.cmd(cmd.trim()),
         }
     }
@@ -150,7 +142,6 @@ impl R2Pipe {
             R2Pipe::Pipe(ref mut x) => x.cmdj(cmd.trim()),
             R2Pipe::Lang(ref mut x) => x.cmdj(cmd.trim()),
             R2Pipe::Tcp(ref mut x) => x.cmdj(cmd.trim()),
-            #[cfg(feature = "http")]
             R2Pipe::Http(ref mut x) => x.cmdj(cmd.trim()),
         }
     }
@@ -160,7 +151,6 @@ impl R2Pipe {
             R2Pipe::Pipe(ref mut x) => x.close(),
             R2Pipe::Lang(ref mut x) => x.close(),
             R2Pipe::Tcp(ref mut x) => x.close(),
-            #[cfg(feature = "http")]
             R2Pipe::Http(ref mut x) => x.close(),
         }
     }
@@ -230,8 +220,6 @@ impl R2Pipe {
         Ok(R2Pipe::Tcp(R2PipeTcp { socket_addr: addr }))
     }
 
-    #[cfg(feature = "http")]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "http")))]
     /// Creates a new R2PipeHttp
     pub fn http(host: &str) -> R2Pipe {
         R2Pipe::Http(R2PipeHttp {
@@ -356,14 +344,27 @@ impl R2PipeLang {
     }
 }
 
-#[cfg(feature = "http")]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "http")))]
 impl R2PipeHttp {
     pub fn cmd(&mut self, cmd: &str) -> Result<String> {
-        let url = format!("http://{}/cmd/{}", self.host, cmd);
-        let res = reqwest::get(&url)?;
-        let bytes = res.bytes().filter_map(|e| e.ok()).collect::<Vec<_>>();
-        Ok(str::from_utf8(bytes.as_slice()).map(|s| s.to_string())?)
+        let host = if self.host.starts_with("http://") {
+            &self.host[7..]
+        } else {
+            &self.host
+        };
+        let mut stream = TcpStream::connect(host)?;
+        let req = format!("GET /cmd/{} HTTP/1.1\r\n", cmd);
+        let mut resp = Vec::with_capacity(1024);
+        stream.write_all(req.as_bytes())?;
+        stream.read_to_end(&mut resp)?;
+
+        // index of the start of response body
+        let index = resp
+            .windows(4)
+            .position(|w| w == "\r\n\r\n".as_bytes())
+            .map(|i| i + 4)
+            .unwrap_or(0);
+
+        Ok(str::from_utf8(&resp[index..]).map(|s| s.to_string())?)
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {

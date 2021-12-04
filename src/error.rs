@@ -2,9 +2,6 @@ use std::sync::mpsc::{RecvError, SendError, TryRecvError};
 use std::{io, str};
 use thiserror::Error;
 
-#[cfg(feature = "http")]
-use reqwest;
-
 /// Custom `Error` for r2pipe.rs.
 #[derive(Error, Debug)]
 pub enum Error {
@@ -43,9 +40,4 @@ pub enum Error {
     /// Error sending data through channel.
     #[error("Send channel data error")]
     ChannelSendError(#[from] SendError<String>),
-
-    /// Error during reqwest operation.
-    #[cfg(feature = "http")]
-    #[error("Reqwest error")]
-    Reqwest(#[from] reqwest::Error),
 }
