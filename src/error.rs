@@ -2,7 +2,6 @@ use std::sync::mpsc::{RecvError, SendError, TryRecvError};
 use std::{io, str};
 use thiserror::Error;
 
-
 /// Custom `Error` for r2pipe.rs.
 #[derive(Error, Debug)]
 pub enum Error {

@@ -356,14 +356,14 @@ impl R2PipeHttp {
         let mut resp = Vec::with_capacity(1024);
         stream.write(req.as_bytes())?;
         stream.read_to_end(&mut resp)?;
-        
+
         // index of the start of response body
         let index = resp
             .windows(4)
             .position(|w| w == "\r\n\r\n".as_bytes())
-            .map(|i| i+4)
-            .unwrap_or(0); 
-    
+            .map(|i| i + 4)
+            .unwrap_or(0);
+
         Ok(str::from_utf8(&resp[index..]).map(|s| s.to_string())?)
     }
 
