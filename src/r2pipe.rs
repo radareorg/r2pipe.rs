@@ -354,7 +354,7 @@ impl R2PipeHttp {
         let mut stream = TcpStream::connect(host)?;
         let req = format!("GET /cmd/{} HTTP/1.1\r\n", cmd);
         let mut resp = Vec::with_capacity(1024);
-        stream.write(req.as_bytes())?;
+        stream.write_all(req.as_bytes())?;
         stream.read_to_end(&mut resp)?;
 
         // index of the start of response body
