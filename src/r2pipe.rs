@@ -129,12 +129,7 @@ impl R2Pipe {
     }
 
     pub fn cmd(&mut self, cmd: &str) -> Result<String> {
-        match *self {
-            R2Pipe::Pipe(ref mut x) => x.cmd(cmd.trim()),
-            R2Pipe::Lang(ref mut x) => x.cmd(cmd.trim()),
-            R2Pipe::Tcp(ref mut x) => x.cmd(cmd.trim()),
-            R2Pipe::Http(ref mut x) => x.cmd(cmd.trim()),
-        }
+        self.cmd(cmd.trim())
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
