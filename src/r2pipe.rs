@@ -69,7 +69,7 @@ pub enum R2Pipe {
 pub trait Piper {
     fn cmd(&mut self, cmd: &str) -> Result<String>;
     fn cmdj(&mut self, cmd: &str) -> Result<Value>;
-    fn close(&mut self);
+    fn close(&mut self) {}
 }
 
 fn atoi(k: &str) -> i32 {
@@ -336,10 +336,6 @@ impl Piper for R2PipeLang {
 
         Ok(serde_json::from_str(&res)?)
     }
-    fn close(&mut self) {
-        // self.read.close();
-        // self.write.close();
-    }
 }
 
 impl Piper for R2PipeHttp {
@@ -369,8 +365,6 @@ impl Piper for R2PipeHttp {
         let res = self.cmd(cmd)?;
         Ok(serde_json::from_str(&res)?)
     }
-
-    fn close(&mut self) {}
 }
 
 impl Piper for R2PipeTcp {
@@ -387,6 +381,4 @@ impl Piper for R2PipeTcp {
         let res = self.cmd(cmd)?;
         Ok(serde_json::from_str(&res)?)
     }
-
-    fn close(&mut self) {}
 }
