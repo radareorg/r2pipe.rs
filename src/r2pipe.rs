@@ -66,6 +66,12 @@ pub enum R2Pipe {
     Http(R2PipeHttp),
 }
 
+pub trait Piper {
+    fn cmd(&mut self, cmd: &str) -> Result<String>;
+    fn cmdj(&mut self, cmd: &str) -> Result<Value>;
+    fn close(&mut self);
+}
+
 fn atoi(k: &str) -> i32 {
     k.parse::<i32>().unwrap_or(-1)
 }
@@ -127,32 +133,24 @@ impl R2Pipe {
     pub fn open() -> Result<R2Pipe> {
         unimplemented!()
     }
-
-    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+    fn get_piper<'a>(&'a mut self) -> &'a mut dyn Piper {
         match *self {
-            R2Pipe::Pipe(ref mut x) => x.cmd(cmd.trim()),
-            R2Pipe::Lang(ref mut x) => x.cmd(cmd.trim()),
-            R2Pipe::Tcp(ref mut x) => x.cmd(cmd.trim()),
-            R2Pipe::Http(ref mut x) => x.cmd(cmd.trim()),
+            R2Pipe::Pipe(ref mut x) => x,
+            R2Pipe::Lang(ref mut x) => x,
+            R2Pipe::Tcp(ref mut x) => x,
+            R2Pipe::Http(ref mut x) => x,
         }
+    }
+    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+        self.get_piper().cmd(cmd.trim())
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        match *self {
-            R2Pipe::Pipe(ref mut x) => x.cmdj(cmd.trim()),
-            R2Pipe::Lang(ref mut x) => x.cmdj(cmd.trim()),
-            R2Pipe::Tcp(ref mut x) => x.cmdj(cmd.trim()),
-            R2Pipe::Http(ref mut x) => x.cmdj(cmd.trim()),
-        }
+        self.get_piper().cmdj(cmd.trim())
     }
 
     pub fn close(&mut self) {
-        match *self {
-            R2Pipe::Pipe(ref mut x) => x.close(),
-            R2Pipe::Lang(ref mut x) => x.close(),
-            R2Pipe::Tcp(ref mut x) => x.close(),
-            R2Pipe::Http(ref mut x) => x.close(),
-        }
+        self.get_piper().close();
     }
 
     pub fn in_session() -> Option<(i32, i32)> {
@@ -290,8 +288,8 @@ impl R2PipeThread {
     }
 }
 
-impl R2PipeSpawn {
-    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+impl Piper for R2PipeSpawn {
+    fn cmd(&mut self, cmd: &str) -> Result<String> {
         let cmd = cmd.to_owned() + "\n";
         self.write.write_all(cmd.as_bytes())?;
 
@@ -300,23 +298,14 @@ impl R2PipeSpawn {
         process_result(res)
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
+    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
         let result = self.cmd(cmd)?;
         if result.is_empty() {
             return Err(Error::EmptyResponse);
         }
         Ok(serde_json::from_str(&result)?)
     }
-
-    /// Attempts to take the pipes underlying child process handle.
-    /// On success the handle is returned.
-    /// If `None` is returned the child handle was already taken previously.
-    /// By using this method you take over the responsibility to `wait()` the child process in order to free all of it's resources.
-    pub fn take_child(&mut self) -> Option<process::Child> {
-        self.child.take()
-    }
-
-    pub fn close(&mut self) {
+    fn close(&mut self) {
         let _ = self.cmd("q!");
         if let Some(child) = &mut self.child {
             let _ = child.wait();
@@ -324,28 +313,37 @@ impl R2PipeSpawn {
     }
 }
 
-impl R2PipeLang {
-    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+impl R2PipeSpawn {
+    /// Attempts to take the pipes underlying child process handle.
+    /// On success the handle is returned.
+    /// If `None` is returned the child handle was already taken previously.
+    /// By using this method you take over the responsibility to `wait()` the child process in order to free all of it's resources.
+    pub fn take_child(&mut self) -> Option<process::Child> {
+        self.child.take()
+    }
+}
+
+impl Piper for R2PipeLang {
+    fn cmd(&mut self, cmd: &str) -> Result<String> {
         self.write.write_all(cmd.as_bytes())?;
         let mut res: Vec<u8> = Vec::new();
         self.read.read_until(0u8, &mut res)?;
         process_result(res)
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
+    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
         let res = self.cmd(cmd)?;
 
         Ok(serde_json::from_str(&res)?)
     }
-
-    pub fn close(&mut self) {
+    fn close(&mut self) {
         // self.read.close();
         // self.write.close();
     }
 }
 
-impl R2PipeHttp {
-    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+impl Piper for R2PipeHttp {
+    fn cmd(&mut self, cmd: &str) -> Result<String> {
         let host = if self.host.starts_with("http://") {
             &self.host[7..]
         } else {
@@ -367,16 +365,16 @@ impl R2PipeHttp {
         Ok(str::from_utf8(&resp[index..]).map(|s| s.to_string())?)
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
+    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
         let res = self.cmd(cmd)?;
         Ok(serde_json::from_str(&res)?)
     }
 
-    pub fn close(&mut self) {}
+    fn close(&mut self) {}
 }
 
-impl R2PipeTcp {
-    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+impl Piper for R2PipeTcp {
+    fn cmd(&mut self, cmd: &str) -> Result<String> {
         let mut stream = TcpStream::connect(self.socket_addr)?;
         stream.write_all(cmd.as_bytes())?;
         let mut res: Vec<u8> = Vec::new();
@@ -385,10 +383,10 @@ impl R2PipeTcp {
         process_result(res)
     }
 
-    pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
+    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
         let res = self.cmd(cmd)?;
         Ok(serde_json::from_str(&res)?)
     }
 
-    pub fn close(&mut self) {}
+    fn close(&mut self) {}
 }
