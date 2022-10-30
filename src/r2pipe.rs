@@ -66,7 +66,7 @@ pub enum R2Pipe {
     Http(R2PipeHttp),
 }
 
-pub trait Piper {
+pub trait Pipe {
     fn cmd(&mut self, cmd: &str) -> Result<String>;
     fn cmdj(&mut self, cmd: &str) -> Result<Value>;
     fn close(&mut self) {}
@@ -133,7 +133,7 @@ impl R2Pipe {
     pub fn open() -> Result<R2Pipe> {
         unimplemented!()
     }
-    fn get_piper<'a>(&'a mut self) -> &'a mut dyn Piper {
+    fn get_piper<'a>(&'a mut self) -> &'a mut dyn Pipe {
         match *self {
             R2Pipe::Pipe(ref mut x) => x,
             R2Pipe::Lang(ref mut x) => x,
@@ -288,7 +288,7 @@ impl R2PipeThread {
     }
 }
 
-impl Piper for R2PipeSpawn {
+impl Pipe for R2PipeSpawn {
     fn cmd(&mut self, cmd: &str) -> Result<String> {
         let cmd = cmd.to_owned() + "\n";
         self.write.write_all(cmd.as_bytes())?;
@@ -323,7 +323,7 @@ impl R2PipeSpawn {
     }
 }
 
-impl Piper for R2PipeLang {
+impl Pipe for R2PipeLang {
     fn cmd(&mut self, cmd: &str) -> Result<String> {
         self.write.write_all(cmd.as_bytes())?;
         let mut res: Vec<u8> = Vec::new();
@@ -338,7 +338,7 @@ impl Piper for R2PipeLang {
     }
 }
 
-impl Piper for R2PipeHttp {
+impl Pipe for R2PipeHttp {
     fn cmd(&mut self, cmd: &str) -> Result<String> {
         let host = if self.host.starts_with("http://") {
             &self.host[7..]
@@ -367,7 +367,7 @@ impl Piper for R2PipeHttp {
     }
 }
 
-impl Piper for R2PipeTcp {
+impl Pipe for R2PipeTcp {
     fn cmd(&mut self, cmd: &str) -> Result<String> {
         let mut stream = TcpStream::connect(self.socket_addr)?;
         stream.write_all(cmd.as_bytes())?;
