@@ -133,7 +133,7 @@ impl R2Pipe {
     pub fn open() -> Result<R2Pipe> {
         unimplemented!()
     }
-    fn get_piper<'a>(&'a mut self) -> &'a mut dyn Pipe {
+    fn get_pipe<'a>(&'a mut self) -> &'a mut dyn Pipe {
         match *self {
             R2Pipe::Pipe(ref mut x) => x,
             R2Pipe::Lang(ref mut x) => x,
@@ -142,15 +142,15 @@ impl R2Pipe {
         }
     }
     pub fn cmd(&mut self, cmd: &str) -> Result<String> {
-        self.get_piper().cmd(cmd.trim())
+        self.get_pipe().cmd(cmd.trim())
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        self.get_piper().cmdj(cmd.trim())
+        self.get_pipe().cmdj(cmd.trim())
     }
 
     pub fn close(&mut self) {
-        self.get_piper().close();
+        self.get_pipe().close();
     }
 
     pub fn in_session() -> Option<(i32, i32)> {
