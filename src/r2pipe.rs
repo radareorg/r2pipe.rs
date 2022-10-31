@@ -133,7 +133,7 @@ impl R2Pipe {
     pub fn open() -> Result<R2Pipe> {
         unimplemented!()
     }
-    fn get_pipe<'a>(&'a mut self) -> &'a mut dyn Pipe {
+    fn get_pipe(&mut self) -> &'_ mut dyn Pipe {
         match *self {
             R2Pipe::Pipe(ref mut x) => x,
             R2Pipe::Lang(ref mut x) => x,

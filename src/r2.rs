@@ -70,7 +70,7 @@ impl R2 {
     }
 
     pub fn recv_json(&mut self) -> Result<Value> {
-        let mut res = self.recv().replace("\n", "");
+        let mut res = self.recv().replace('\n', "");
         if res.is_empty() {
             res = "{}".to_owned();
         }
