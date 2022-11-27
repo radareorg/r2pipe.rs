@@ -66,14 +66,10 @@ pub enum R2Pipe {
     Http(R2PipeHttp),
 }
 
-fn atoi(k: &str) -> i32 {
-    k.parse::<i32>().unwrap_or(-1)
-}
-
-fn getenv(k: &str) -> i32 {
+fn getenv(k: &str) -> Option<i32> {
     match env::var(k) {
-        Ok(val) => atoi(&val),
-        Err(_) => -1,
+        Ok(val) => val.parse::<i32>().ok(),
+        Err(_) => None,
     }
 }
 
@@ -88,21 +84,21 @@ fn process_result(res: Vec<u8>) -> Result<String> {
 
 #[macro_export]
 macro_rules! open_pipe {
-	() => {
-            R2Pipe::open(),
+    () => {
+        R2Pipe::open(),
+    };
+        ($x: expr) => {
+            match $x {
+                Some(path) => R2Pipe::spawn(path, None),
+                None => R2Pipe::open(),
+            }
         };
-	($x: expr) => {
-		match $x {
-			Some(path) => R2Pipe::spawn(path, None),
-			None => R2Pipe::open(),
-		}
-	};
-	($x: expr, $y: expr) => {
-		match $x $y {
-			Some(path, opts) => R2Pipe::spawn(path, opts),
-			(None, None) => R2Pipe::open(),
-		}
-	}
+        ($x: expr, $y: expr) => {
+            match $x $y {
+                Some(path, opts) => R2Pipe::spawn(path, opts),
+                (None, None) => R2Pipe::open(),
+            }
+    }
 }
 
 impl R2Pipe {
@@ -156,11 +152,8 @@ impl R2Pipe {
     }
 
     pub fn in_session() -> Option<(i32, i32)> {
-        let f_in = getenv("R2PIPE_IN");
-        let f_out = getenv("R2PIPE_OUT");
-        if f_in < 0 || f_out < 0 {
-            return None;
-        }
+        let f_in = getenv("R2PIPE_IN")?;
+        let f_out = getenv("R2PIPE_OUT")?;
         Some((f_in, f_out))
     }
 
