@@ -71,7 +71,6 @@ pub trait Pipe {
     fn cmdj(&mut self, cmd: &str) -> Result<Value>;
     fn close(&mut self) {}
 }
-
 fn getenv(k: &str) -> Option<i32> {
     match env::var(k) {
         Ok(val) => val.parse::<i32>().ok(),
