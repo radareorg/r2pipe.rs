@@ -57,17 +57,3 @@ impl Drop for LibHandle {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn load_lib_test() {
-        let mut _lib = super::LibHandle::new("libc", Some(".6")).unwrap();
-    }
-    #[test]
-    fn load_sym_test() {
-        let mut lib = super::LibHandle::new("libm", Some(".6")).unwrap();
-        let sqrt: fn(libc::c_double) -> libc::c_double = lib.load_sym("sqrt").unwrap();
-        assert_eq!(sqrt(4.0), 2.0);
-    }
-}
