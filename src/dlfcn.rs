@@ -41,7 +41,8 @@ impl LibHandle {
 
 impl Drop for LibHandle {
     fn drop(&mut self) {
-        todo!();
+        let handle = *self.0.lock().unwrap();
+        unsafe { libc::dlclose(handle) };
     }
 }
 
