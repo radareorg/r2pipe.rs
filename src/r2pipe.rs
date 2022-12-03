@@ -401,10 +401,10 @@ impl Pipe for R2PipeNative {
         let r_core = *self.r_core.lock().unwrap();
         let cmd = dlfcn::to_cstr(cmd)?;
         let res = (self.r_core_cmd_str_handle)(r_core, cmd);
-        if !res.is_null() {
+        if res.is_null() {
             Err(Error::EmptyResponse)
         } else {
-            Ok(unsafe { std::ffi::CStr::from_ptr(cmd).to_str()?.to_string() })
+            Ok(unsafe { std::ffi::CStr::from_ptr(res).to_str()?.to_string() })
         }
     }
     fn cmdj(&mut self, cmd: &str) -> Result<Value> {
@@ -437,7 +437,6 @@ mod test {
     #[test]
     fn native_test() {
         let mut r2p = R2PipeNative::open("/bin/ls").unwrap();
-        let a = r2p.cmd("aaa").unwrap();
-        println!("{}", a);
+        assert_eq!("a\n", r2p.cmd("echo a").unwrap());
     }
 }
