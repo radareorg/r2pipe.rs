@@ -2,6 +2,7 @@
 //!
 //! Please check crate level documentation for more details and example.
 
+use crate::dlfcn;
 use crate::{Error, Result};
 
 use std::env;
@@ -367,6 +368,12 @@ impl Pipe for R2PipeTcp {
         res.push(0);
         process_result(res)
     }
+}
+
+pub struct R2PipeNative {
+    lib: dlfcn::LibHandle,
+    r_core: std::sync::Mutex<*mut libc::c_void>,
+    r_core_cmd_str_handle: fn(*mut libc::c_void, *const libc::c_char),
 }
 
 #[cfg(test)]
