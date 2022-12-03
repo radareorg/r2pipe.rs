@@ -55,6 +55,7 @@
 
 #[macro_use]
 pub mod r2pipe;
+mod dlfcn;
 pub mod r2;
 
 mod error;
