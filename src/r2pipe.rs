@@ -421,6 +421,7 @@ impl Drop for R2PipeNative {
         }
     }
 }
+<<<<<<< HEAD
 
 #[cfg(test)]
 mod test {
@@ -440,3 +441,5 @@ mod test {
         assert_eq!("a\n", r2p.cmd("echo a").unwrap());
     }
 }
+=======
+>>>>>>> ae8647a (Remove R2Native tests and revert ci changes)
