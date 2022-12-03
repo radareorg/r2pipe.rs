@@ -382,7 +382,7 @@ impl R2PipeNative {
         let r_core_new: fn() -> *mut libc::c_void = lib.load_sym("r_core_new")?;
         let r_core_cmd_str_handle = lib.load_sym("r_core_cmd_str")?;
         let r_core = r_core_new();
-        if !r_core.is_null() {
+        if r_core.is_null() {
             Err(Error::LibError)
         } else {
             let mut ret = R2PipeNative {
