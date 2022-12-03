@@ -42,7 +42,10 @@ impl LibHandle {
 impl Drop for LibHandle {
     fn drop(&mut self) {
         let handle = *self.0.lock().unwrap();
-        unsafe { libc::dlclose(handle) };
+        let ret = unsafe { libc::dlclose(handle) };
+        if ret != 0 {
+            panic!("Failed to close the lib");
+        }
     }
 }
 
