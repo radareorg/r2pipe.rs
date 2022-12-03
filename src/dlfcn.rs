@@ -5,7 +5,7 @@ pub struct LibHandle(std::sync::Mutex<*mut c_void>);
 
 pub fn to_cstr(s: &str) -> Result<*const c_char> {
     Ok(std::ffi::CString::new(s)
-        .or_else(|_| Err(Error::LibError))?
+        .map_err(|_| Error::LibError)?
         .into_raw())
 }
 
