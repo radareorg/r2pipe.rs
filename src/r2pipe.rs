@@ -373,7 +373,36 @@ impl Pipe for R2PipeTcp {
 pub struct R2PipeNative {
     lib: dlfcn::LibHandle,
     r_core: std::sync::Mutex<*mut libc::c_void>,
-    r_core_cmd_str_handle: fn(*mut libc::c_void, *const libc::c_char),
+    r_core_cmd_str_handle: fn(*mut libc::c_void, *const libc::c_char) -> *mut libc::c_char,
+}
+
+impl R2PipeNative {
+    pub fn open(file: &str) -> Result<R2PipeNative> {
+        let mut lib = dlfcn::LibHandle::new("libr_core", None)?;
+        let r_core_new: fn() -> *mut libc::c_void = lib.load_sym("r_core_new")?;
+        let r_core_cmd_str_handle = lib.load_sym("r_core_cmd_str")?;
+        let r_core = r_core_new();
+        if !r_core.is_null() {
+            Err(Error::LibError)
+        } else {
+            let mut ret = R2PipeNative {
+                lib,
+                r_core: std::sync::Mutex::new(r_core),
+                r_core_cmd_str_handle,
+            };
+            ret.cmd(&format!("o {}", file))?;
+            Ok(ret)
+        }
+    }
+}
+
+impl Pipe for R2PipeNative {
+    fn cmd(&mut self, cmd: &str) -> Result<String> {
+        todo!()
+    }
+    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

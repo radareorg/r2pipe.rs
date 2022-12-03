@@ -3,13 +3,13 @@ use libc::*;
 //Conatins the lib
 pub struct LibHandle(std::sync::Mutex<*mut c_void>);
 
-fn to_cstr(s: &str) -> Result<*const c_char> {
+pub fn to_cstr(s: &str) -> Result<*const c_char> {
     Ok(std::ffi::CString::new(s)
         .or_else(|_| Err(Error::LibError))?
         .into_raw())
 }
 
-fn free_cstr(ptr: *const c_char) {
+pub fn free_cstr(ptr: *const c_char) {
     let _ = unsafe { std::ffi::CString::from_raw(ptr as *mut _) };
 }
 
