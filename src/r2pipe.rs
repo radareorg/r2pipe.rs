@@ -398,10 +398,18 @@ impl R2PipeNative {
 
 impl Pipe for R2PipeNative {
     fn cmd(&mut self, cmd: &str) -> Result<String> {
-        todo!()
+        let r_core = *self.r_core.lock().unwrap();
+        let cmd = dlfcn::to_cstr(cmd)?;
+        let res = (self.r_core_cmd_str_handle)(r_core, cmd);
+        if !res.is_null() {
+            Err(Error::EmptyResponse)
+        } else {
+            Ok(unsafe { std::ffi::CStr::from_ptr(cmd).to_str()?.to_string() })
+        }
     }
     fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        todo!()
+        let res = self.cmd(cmd)?;
+        Ok(serde_json::from_str(&res)?)
     }
 }
 
