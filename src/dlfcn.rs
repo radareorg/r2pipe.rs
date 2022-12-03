@@ -14,9 +14,9 @@ fn free_cstr(ptr: *const c_char) {
 }
 
 impl LibHandle {
-    pub fn new(name: &str) -> Result<LibHandle> {
+    pub fn new(name: &str, end: Option<&str>) -> Result<LibHandle> {
         let name = to_cstr(&format!(
-            "{}{}",
+            "{}{}{}",
             name,
             if cfg!(windows) {
                 ".dll"
@@ -24,7 +24,8 @@ impl LibHandle {
                 ".dylib"
             } else {
                 ".so"
-            }
+            },
+            end.unwrap_or("")
         ))?;
         let ret = unsafe { dlopen(name, RTLD_LAZY) };
         free_cstr(name);
@@ -34,8 +35,16 @@ impl LibHandle {
             Ok(LibHandle(std::sync::Mutex::new(ret)))
         }
     }
-    pub fn load_sym<T>(&mut self, name: &str) -> T {
-        todo!();
+    pub fn load_sym<T>(&mut self, name: &str) -> Result<T> {
+        let handle = *self.0.lock().unwrap();
+        let name = to_cstr(name)?;
+        let sym = unsafe { dlsym(handle, name) };
+        free_cstr(name);
+        if sym.is_null() {
+            Err(Error::LibError)
+        } else {
+            Ok(unsafe { std::mem::transmute_copy(&sym) })
+        }
     }
 }
 
@@ -52,7 +61,7 @@ impl Drop for LibHandle {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn load_test() {
-        let _lib = super::LibHandle::new("libr_core").unwrap();
+    fn load_lib_test() {
+        let _lib = super::LibHandle::new("libc", Some(".6")).unwrap();
     }
 }
