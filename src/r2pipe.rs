@@ -416,7 +416,9 @@ impl Pipe for R2PipeNative {
 impl Drop for R2PipeNative {
     fn drop(&mut self) {
         let r_core = *self.r_core.lock().unwrap();
-        if let Ok(r_core_free) = self.lib.load_sym::<fn(*mut libc::c_void)>("r_core_free") {
+        if let Ok(r_core_free) =
+            unsafe { self.lib.load_sym::<fn(*mut libc::c_void)>("r_core_free") }
+        {
             r_core_free(r_core);
         }
     }

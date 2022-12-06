@@ -35,15 +35,15 @@ impl LibHandle {
             Ok(LibHandle(std::sync::Mutex::new(ret)))
         }
     }
-    pub fn load_sym<T>(&mut self, name: &str) -> Result<T> {
+    pub unsafe fn load_sym<T>(&mut self, name: &str) -> Result<T> {
         let handle = *self.0.lock().unwrap();
         let name = to_cstr(name)?;
-        let sym = unsafe { dlsym(handle, name) };
+        let sym = dlsym(handle, name);
         free_cstr(name);
         if sym.is_null() {
             Err(Error::LibError)
         } else {
-            Ok(unsafe { std::mem::transmute_copy(&sym) })
+            Ok(std::mem::transmute_copy(&sym))
         }
     }
 }
