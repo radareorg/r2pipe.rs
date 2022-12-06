@@ -379,8 +379,8 @@ pub struct R2PipeNative {
 impl R2PipeNative {
     pub fn open(file: &str) -> Result<R2PipeNative> {
         let mut lib = dlfcn::LibHandle::new("libr_core", None)?;
-        let r_core_new: fn() -> *mut libc::c_void = lib.load_sym("r_core_new")?;
-        let r_core_cmd_str_handle = lib.load_sym("r_core_cmd_str")?;
+        let r_core_new: fn() -> *mut libc::c_void = unsafe { lib.load_sym("r_core_new")? };
+        let r_core_cmd_str_handle = unsafe { lib.load_sym("r_core_cmd_str")? };
         let r_core = r_core_new();
         if r_core.is_null() {
             Err(Error::LibError)
