@@ -59,13 +59,7 @@ pub struct R2PipeSpawnOptions {
 }
 
 /// Provides abstraction between the three invocation methods.
-pub enum R2Pipe {
-    Pipe(R2PipeSpawn),
-    Lang(R2PipeLang),
-    Tcp(R2PipeTcp),
-    Http(R2PipeHttp),
-}
-
+pub struct R2Pipe(Box<dyn Pipe>);
 pub trait Pipe {
     fn cmd(&mut self, cmd: &str) -> Result<String>;
     fn cmdj(&mut self, cmd: &str) -> Result<Value>;
@@ -121,31 +115,23 @@ impl R2Pipe {
                 write: File::from_raw_fd(d_out),
             }
         };
-        Ok(R2Pipe::Lang(res))
+        Ok(R2Pipe(Box::new(res)))
     }
 
     #[cfg(windows)]
     pub fn open() -> Result<R2Pipe> {
         unimplemented!()
     }
-    fn get_pipe(&mut self) -> &'_ mut dyn Pipe {
-        match *self {
-            R2Pipe::Pipe(ref mut x) => x,
-            R2Pipe::Lang(ref mut x) => x,
-            R2Pipe::Tcp(ref mut x) => x,
-            R2Pipe::Http(ref mut x) => x,
-        }
-    }
     pub fn cmd(&mut self, cmd: &str) -> Result<String> {
-        self.get_pipe().cmd(cmd.trim())
+        self.0.cmd(cmd.trim())
     }
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        self.get_pipe().cmdj(cmd.trim())
+        self.0.cmdj(cmd.trim())
     }
 
     pub fn close(&mut self) {
-        self.get_pipe().close();
+        self.0.close();
     }
 
     pub fn in_session() -> Option<(i32, i32)> {
@@ -199,7 +185,7 @@ impl R2Pipe {
             child: Some(child),
         };
 
-        Ok(R2Pipe::Pipe(res))
+        Ok(R2Pipe(Box::new(res)))
     }
 
     /// Creates a new R2PipeTcp
@@ -207,14 +193,14 @@ impl R2Pipe {
         // use `connect` to figure out which socket address works
         let stream = TcpStream::connect(addr)?;
         let addr = stream.peer_addr()?;
-        Ok(R2Pipe::Tcp(R2PipeTcp { socket_addr: addr }))
+        Ok(R2Pipe(Box::new(R2PipeTcp { socket_addr: addr })))
     }
 
     /// Creates a new R2PipeHttp
     pub fn http(host: &str) -> R2Pipe {
-        R2Pipe::Http(R2PipeHttp {
+        R2Pipe(Box::new(R2PipeHttp {
             host: host.to_string(),
-        })
+        }))
     }
 
     /// Creates new pipe threads
