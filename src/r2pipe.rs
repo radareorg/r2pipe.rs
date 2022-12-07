@@ -62,7 +62,13 @@ pub struct R2PipeSpawnOptions {
 pub struct R2Pipe(Box<dyn Pipe>);
 pub trait Pipe {
     fn cmd(&mut self, cmd: &str) -> Result<String>;
-    fn cmdj(&mut self, cmd: &str) -> Result<Value>;
+    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
+        let result = self.cmd(cmd)?;
+        if result.is_empty() {
+            return Err(Error::EmptyResponse);
+        }
+        Ok(serde_json::from_str(&result)?)
+    }
     fn close(&mut self) {}
 }
 fn getenv(k: &str) -> Option<i32> {
@@ -276,13 +282,6 @@ impl Pipe for R2PipeSpawn {
         process_result(res)
     }
 
-    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        let result = self.cmd(cmd)?;
-        if result.is_empty() {
-            return Err(Error::EmptyResponse);
-        }
-        Ok(serde_json::from_str(&result)?)
-    }
     fn close(&mut self) {
         let _ = self.cmd("q!");
         if let Some(child) = &mut self.child {
@@ -308,12 +307,6 @@ impl Pipe for R2PipeLang {
         self.read.read_until(0u8, &mut res)?;
         process_result(res)
     }
-
-    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        let res = self.cmd(cmd)?;
-
-        Ok(serde_json::from_str(&res)?)
-    }
 }
 
 impl Pipe for R2PipeHttp {
@@ -338,11 +331,6 @@ impl Pipe for R2PipeHttp {
 
         Ok(str::from_utf8(&resp[index..]).map(|s| s.to_string())?)
     }
-
-    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        let res = self.cmd(cmd)?;
-        Ok(serde_json::from_str(&res)?)
-    }
 }
 
 impl Pipe for R2PipeTcp {
@@ -353,10 +341,5 @@ impl Pipe for R2PipeTcp {
         stream.read_to_end(&mut res)?;
         res.push(0);
         process_result(res)
-    }
-
-    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        let res = self.cmd(cmd)?;
-        Ok(serde_json::from_str(&res)?)
     }
 }
