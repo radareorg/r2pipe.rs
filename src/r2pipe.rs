@@ -407,10 +407,6 @@ impl Pipe for R2PipeNative {
             Ok(unsafe { std::ffi::CStr::from_ptr(res).to_str()?.to_string() })
         }
     }
-    fn cmdj(&mut self, cmd: &str) -> Result<Value> {
-        let res = self.cmd(cmd)?;
-        Ok(serde_json::from_str(&res)?)
-    }
 }
 
 impl Drop for R2PipeNative {
