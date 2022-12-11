@@ -70,6 +70,12 @@ pub trait Pipe {
         Ok(serde_json::from_str(&result)?)
     }
     fn close(&mut self) {}
+    fn call(&mut self, cmd: &str) -> Result<String> {
+        self.cmd(&format!("\"\"{}", cmd))
+    }
+    fn callj(&mut self, cmd: &str) -> Result<Value> {
+        self.cmdj(&format!("\"\"{}", cmd))
+    }
 }
 fn getenv(k: &str) -> Option<i32> {
     match env::var(k) {
