@@ -69,13 +69,16 @@ pub trait Pipe {
         }
         Ok(serde_json::from_str(&result)?)
     }
-    fn close(&mut self) {}
+    ///Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
     fn call(&mut self, cmd: &str) -> Result<String> {
         self.cmd(&format!("\"\"{}", cmd))
     }
+    ///Escape the command before executing and convert it to a json value,
+    ///valid only as of r2 v.5.8.0 "icebucket"
     fn callj(&mut self, cmd: &str) -> Result<Value> {
         self.cmdj(&format!("\"\"{}", cmd))
     }
+    fn close(&mut self) {}
 }
 fn getenv(k: &str) -> Option<i32> {
     match env::var(k) {
@@ -144,6 +147,15 @@ impl R2Pipe {
 
     pub fn close(&mut self) {
         self.0.close();
+    }
+    ///Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
+    pub fn call(&mut self, cmd: &str) -> Result<String> {
+        self.0.call(cmd)
+    }
+    ///Escape the command before executing and convert it to a json value,
+    ///valid only as of r2 v.5.8.0 "icebucket"
+    pub fn callj(&mut self, cmd: &str) -> Result<Value> {
+        self.0.callj(cmd)
     }
 
     pub fn in_session() -> Option<(i32, i32)> {
