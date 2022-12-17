@@ -73,8 +73,8 @@ pub trait Pipe {
     fn call(&mut self, cmd: &str) -> Result<String> {
         self.cmd(&format!("\"\"{}", cmd))
     }
-    ///Escape the command before executing and convert it to a json value,
-    ///valid only as of r2 v.5.8.0 "icebucket"
+    /// Escape the command before executing and convert it to a json value,
+    /// valid only as of r2 v.5.8.0 "icebucket"
     fn callj(&mut self, cmd: &str) -> Result<Value> {
         self.cmdj(&format!("\"\"{}", cmd))
     }
