@@ -148,12 +148,12 @@ impl R2Pipe {
     pub fn close(&mut self) {
         self.0.close();
     }
-    ///Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
+    /// Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
     pub fn call(&mut self, cmd: &str) -> Result<String> {
         self.0.call(cmd)
     }
-    ///Escape the command before executing and convert it to a json value,
-    ///valid only as of r2 v.5.8.0 "icebucket"
+    /// Escape the command before executing and convert it to a json value,
+    /// valid only as of r2 v.5.8.0 "icebucket"
     pub fn callj(&mut self, cmd: &str) -> Result<Value> {
         self.0.callj(cmd)
     }
