@@ -69,7 +69,7 @@ pub trait Pipe {
         }
         Ok(serde_json::from_str(&result)?)
     }
-    ///Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
+    /// Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
     fn call(&mut self, cmd: &str) -> Result<String> {
         self.cmd(&format!("\"\"{}", cmd))
     }
