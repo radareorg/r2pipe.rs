@@ -101,9 +101,9 @@ macro_rules! open_pipe {
         ($x: expr, $y: expr) => {
             match $x $y {
                 Some(path, opts) => R2Pipe::spawn(path, opts),
-                (None, None) => R2Pipe::open(),
-            }
+
     }
+}
 }
 
 impl R2Pipe {
@@ -162,7 +162,14 @@ impl R2Pipe {
 
         let exepath = match opts {
             Some(ref opt) => opt.exepath.clone(),
-            _ => "r2".to_owned(),
+            _ => {
+                if cfg!(windows) {
+                    "r2.exe"
+                } else {
+                    "r2"
+                }
+            }
+            .to_owned(),
         };
         let args = match opts {
             Some(ref opt) => opt.args.clone(),
