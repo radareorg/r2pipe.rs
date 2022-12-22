@@ -182,7 +182,7 @@ impl R2Pipe {
             Some(ref opt) => opt.exepath.clone(),
             _ => {
                 if cfg!(windows) {
-                    "r2.exe"
+                    "radare2.exe"
                 } else {
                     "r2"
                 }
