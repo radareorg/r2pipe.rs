@@ -110,9 +110,9 @@ macro_rules! open_pipe {
         ($x: expr, $y: expr) => {
             match $x $y {
                 Some(path, opts) => R2Pipe::spawn(path, opts),
-
+                (None, None) => R2Pipe::open(),
+            }
     }
-}
 }
 
 impl R2Pipe {
