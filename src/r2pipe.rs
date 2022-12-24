@@ -174,10 +174,6 @@ impl R2Pipe {
 
     /// Creates a new R2PipeSpawn.
     pub fn spawn<T: AsRef<str>>(name: T, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
-        if name.as_ref() == "" && R2Pipe::in_session().is_some() {
-            return R2Pipe::open();
-        }
-
         let exepath = match opts {
             Some(ref opt) => opt.exepath.clone(),
             _ => "r2".to_owned(),
