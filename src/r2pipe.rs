@@ -180,7 +180,14 @@ impl R2Pipe {
 
         let exepath = match opts {
             Some(ref opt) => opt.exepath.clone(),
-            _ => "r2".to_owned(),
+            _ => {
+                if cfg!(windows) {
+                    "radare2.exe"
+                } else {
+                    "r2"
+                }
+            }
+            .to_owned(),
         };
         let args = match opts {
             Some(ref opt) => opt.args.clone(),
