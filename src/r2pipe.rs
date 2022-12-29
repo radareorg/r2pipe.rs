@@ -2,6 +2,7 @@
 //!
 //! Please check crate level documentation for more details and example.
 
+use crate::dlfcn;
 use crate::{Error, Result};
 
 use std::env;
@@ -103,7 +104,7 @@ macro_rules! open_pipe {
     };
         ($x: expr) => {
             match $x {
-                Some(path) => R2Pipe::spawn(path, None),
+                Some(path) => R2Pipe::load_native(&path.clone()).or_else(|_| R2Pipe::spawn(path, None)),
                 None => R2Pipe::open(),
             }
         };
@@ -116,6 +117,9 @@ macro_rules! open_pipe {
 }
 
 impl R2Pipe {
+    pub fn load_native<T: AsRef<str>>(path: T) -> Result<R2Pipe> {
+        Ok(R2Pipe(Box::new(R2PipeNative::open(path.as_ref())?)))
+    }
     #[cfg(not(windows))]
     pub fn open() -> Result<R2Pipe> {
         use std::os::unix::io::FromRawFd;
@@ -369,13 +373,71 @@ impl Pipe for R2PipeTcp {
     }
 }
 
+pub struct R2PipeNative {
+    lib: dlfcn::LibHandle,
+    r_core: std::sync::Mutex<*mut libc::c_void>,
+    r_core_cmd_str_handle: fn(*mut libc::c_void, *const libc::c_char) -> *mut libc::c_char,
+}
+
+impl R2PipeNative {
+    pub fn open(file: &str) -> Result<R2PipeNative> {
+        let mut lib = dlfcn::LibHandle::new("libr_core", None)?;
+        let r_core_new: fn() -> *mut libc::c_void = unsafe { lib.load_sym("r_core_new")? };
+        let r_core_cmd_str_handle = unsafe { lib.load_sym("r_core_cmd_str")? };
+        let r_core = r_core_new();
+        if r_core.is_null() {
+            Err(Error::SharedLibraryLoadError)
+        } else {
+            let mut ret = R2PipeNative {
+                lib,
+                r_core: std::sync::Mutex::new(r_core),
+                r_core_cmd_str_handle,
+            };
+            ret.cmd(&format!("o {}", file))?;
+            Ok(ret)
+        }
+    }
+}
+
+impl Pipe for R2PipeNative {
+    fn cmd(&mut self, cmd: &str) -> Result<String> {
+        let r_core = *self.r_core.lock().unwrap();
+        let cmd = dlfcn::to_cstr(cmd)?;
+        let res = (self.r_core_cmd_str_handle)(r_core, cmd);
+        if res.is_null() {
+            Err(Error::EmptyResponse)
+        } else {
+            Ok(unsafe { std::ffi::CStr::from_ptr(res).to_str()?.to_string() })
+        }
+    }
+}
+
+impl Drop for R2PipeNative {
+    fn drop(&mut self) {
+        let r_core = *self.r_core.lock().unwrap();
+        if let Ok(r_core_free) =
+            unsafe { self.lib.load_sym::<fn(*mut libc::c_void)>("r_core_free") }
+        {
+            r_core_free(r_core);
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use super::Pipe;
+    use super::R2PipeNative;
     use crate::R2Pipe;
 
     #[test]
     fn spawn_test() {
         let mut pipe = R2Pipe::spawn("/bin/ls", None).unwrap();
         assert_eq!(pipe.cmd("echo test").unwrap(), "test\n");
+    }
+
+    #[test]
+    fn native_test() {
+        let mut r2p = R2PipeNative::open("/bin/ls").unwrap();
+        assert_eq!("a\n", r2p.cmd("echo a").unwrap());
     }
 }

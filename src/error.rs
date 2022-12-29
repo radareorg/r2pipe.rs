@@ -40,4 +40,8 @@ pub enum Error {
     /// Error sending data through channel.
     #[error("Send channel data error")]
     ChannelSendError(#[from] SendError<String>),
+
+    /// Error loading radare2 shared library.
+    #[error("Shared library load error")]
+    SharedLibraryLoadError,
 }
