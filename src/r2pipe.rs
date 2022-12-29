@@ -368,3 +368,14 @@ impl Pipe for R2PipeTcp {
         process_result(res)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::R2Pipe;
+
+    #[test]
+    fn spawn_test() {
+        let mut pipe = R2Pipe::spawn("/bin/ls", None).unwrap();
+        assert_eq!(pipe.cmd("echo test").unwrap(), "test\n");
+    }
+}
