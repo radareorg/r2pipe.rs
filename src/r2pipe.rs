@@ -117,6 +117,9 @@ macro_rules! open_pipe {
 }
 
 impl R2Pipe {
+    pub fn load_native(path: &str) -> Result<R2Pipe> {
+        Ok(R2Pipe(Box::new(R2PipeNative::open(path)?)))
+    }
     #[cfg(not(windows))]
     pub fn open() -> Result<R2Pipe> {
         use std::os::unix::io::FromRawFd;
