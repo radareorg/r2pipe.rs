@@ -104,7 +104,7 @@ macro_rules! open_pipe {
     };
         ($x: expr) => {
             match $x {
-                Some(path) => R2Pipe::spawn(path, None),
+                Some(path) => R2Pipe::load_native(path).or_else(|_| R2Pipe::spawn(path, None)),
                 None => R2Pipe::open(),
             }
         };
@@ -117,8 +117,8 @@ macro_rules! open_pipe {
 }
 
 impl R2Pipe {
-    pub fn load_native(path: &str) -> Result<R2Pipe> {
-        Ok(R2Pipe(Box::new(R2PipeNative::open(path)?)))
+    pub fn load_native<T: AsRef<str>>(path: T) -> Result<R2Pipe> {
+        Ok(R2Pipe(Box::new(R2PipeNative::open(path.as_ref())?)))
     }
     #[cfg(not(windows))]
     pub fn open() -> Result<R2Pipe> {
