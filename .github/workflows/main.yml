@@ -13,7 +13,7 @@ jobs:
         name: R2pipe.rs
         runs-on: ubuntu-latest
         steps:
-            - run: https://github.com/radareorg/radare2/releases/download/5.8.0/radare2_5.8.0_amd64.deb && dpkg -i radare2*.deb
+            - run: wget https://github.com/radareorg/radare2/releases/download/5.8.0/radare2_5.8.0_amd64.deb && dpkg -i radare2*.deb
             - uses: actions/checkout@v2
             - uses: actions-rs/toolchain@v1
               with:
