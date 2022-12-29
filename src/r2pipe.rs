@@ -386,7 +386,7 @@ impl R2PipeNative {
         let r_core_cmd_str_handle = unsafe { lib.load_sym("r_core_cmd_str")? };
         let r_core = r_core_new();
         if r_core.is_null() {
-            Err(Error::LibError)
+            Err(Error::SharedLibraryLoadError)
         } else {
             let mut ret = R2PipeNative {
                 lib,
@@ -422,13 +422,12 @@ impl Drop for R2PipeNative {
         }
     }
 }
-<<<<<<< HEAD
 
 #[cfg(test)]
 mod test {
-    use crate::R2Pipe;
     use super::Pipe;
     use super::R2PipeNative;
+    use crate::R2Pipe;
 
     #[test]
     fn spawn_test() {
@@ -442,5 +441,3 @@ mod test {
         assert_eq!("a\n", r2p.cmd("echo a").unwrap());
     }
 }
-=======
->>>>>>> ae8647a (Remove R2Native tests and revert ci changes)
