@@ -104,7 +104,7 @@ macro_rules! open_pipe {
     };
         ($x: expr) => {
             match $x {
-                Some(path) => R2Pipe::load_native(path).or_else(|_| R2Pipe::spawn(path, None)),
+                Some(path) => R2Pipe::load_native(&path.clone()).or_else(|_| R2Pipe::spawn(path, None)),
                 None => R2Pipe::open(),
             }
         };
