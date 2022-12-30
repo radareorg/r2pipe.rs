@@ -10,7 +10,6 @@ fn main() -> Result<()> {
         println!("Quit failed/ignored!");
         if let Ok(msg) = r2p.cmd("?e World") {
             println!("{}", msg);
-            r2p.close();
         } else {
             println!("FAIL");
         }

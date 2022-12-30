@@ -14,7 +14,6 @@ fn main() -> Result<()> {
         println!("BITS {}", json["bin"]["bits"]);
         println!("Disasm:\n{}", r2p.cmd("pd 20")?);
         println!("Hexdump:\n{}", r2p.cmd("px 64")?);
-        r2p.close();
     }
 
     Ok(())

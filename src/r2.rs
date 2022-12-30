@@ -53,11 +53,6 @@ impl R2 {
         }
     }
 
-    pub fn close(&mut self) -> Result<()> {
-        self.send("q!")?;
-        Ok(())
-    }
-
     pub fn send(&mut self, cmd: &str) -> Result<()> {
         self.readin = self.pipe.cmd(cmd)?;
         Ok(())

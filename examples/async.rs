@@ -58,7 +58,6 @@ impl R2PipeAsync {
                 let res = r2p.cmd(&msg).unwrap();
                 child_tx.send(res).unwrap();
             }
-            r2p.close();
         });
 
         // main loop

@@ -43,7 +43,6 @@
 //!         println!("{}", serde_json::to_string_pretty(&json).unwrap());
 //!         println!("ARCH {}", json["bin"]["arch"]);
 //!     }
-//!     r2p.close();
 //! }
 //! ```
 //!

@@ -31,7 +31,6 @@ fn main() -> Result<()> {
     // Meanwhile: Expecting callbacks
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
-    // Finally properly close all pipes
     // Note: For "join()" we need to borrow so pipes.iter() won't work for this
     for p in pipes {
         if let Ok(_) = p.send("q".to_string()) {};

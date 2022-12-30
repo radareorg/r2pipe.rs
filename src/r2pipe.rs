@@ -79,7 +79,6 @@ pub trait Pipe {
     fn callj(&mut self, cmd: &str) -> Result<Value> {
         self.cmdj(&format!("\"\"{}", cmd))
     }
-    fn close(&mut self) {}
 }
 fn getenv(k: &str) -> Option<i32> {
     match env::var(k) {
@@ -147,10 +146,6 @@ impl R2Pipe {
 
     pub fn cmdj(&mut self, cmd: &str) -> Result<Value> {
         self.0.cmdj(cmd.trim())
-    }
-
-    pub fn close(&mut self) {
-        self.0.close();
     }
     /// Escape the command before executing, valid only as of r2 v.5.8.0 "icebucket"
     pub fn call(&mut self, cmd: &str) -> Result<String> {
@@ -310,8 +305,10 @@ impl Pipe for R2PipeSpawn {
         self.read.read_until(0u8, &mut res)?;
         process_result(res)
     }
+}
 
-    fn close(&mut self) {
+impl Drop for R2PipeSpawn {
+    fn drop(&mut self) {
         let _ = self.cmd("q!");
         if let Some(child) = &mut self.child {
             let _ = child.wait();
