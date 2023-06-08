@@ -53,10 +53,21 @@ pub struct R2PipeThread {
     pub handle: thread::JoinHandle<Result<()>>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct R2PipeSpawnOptions {
     pub exepath: String,
     pub args: Vec<&'static str>,
+}
+
+impl Default for R2PipeSpawnOptions {
+    fn default() -> Self {
+        let exepath = if cfg!(windows) { "radare2.exe" } else { "r2" };
+
+        R2PipeSpawnOptions {
+            exepath: exepath.to_string(),
+            args: Vec::default(),
+        }
+    }
 }
 
 /// Provides abstraction between the three invocation methods.
@@ -177,26 +188,13 @@ impl R2Pipe {
     }
 
     /// Creates a new R2PipeSpawn.
-    pub fn spawn<T: AsRef<str>>(name: T, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
+    pub fn spawn<T: AsRef<str>>(name: T, mut opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
         if name.as_ref() == "" && R2Pipe::in_session().is_some() {
             return R2Pipe::open();
         }
 
-        let exepath = match opts {
-            Some(ref opt) => opt.exepath.clone(),
-            _ => {
-                if cfg!(windows) {
-                    "radare2.exe"
-                } else {
-                    "r2"
-                }
-            }
-            .to_owned(),
-        };
-        let args = match opts {
-            Some(ref opt) => opt.args.clone(),
-            _ => vec![],
-        };
+        let R2PipeSpawnOptions { exepath, args } = opts.take().unwrap_or_default();
+
         let path = Path::new(name.as_ref());
         let mut child = Command::new(exepath)
             .arg("-q0")
