@@ -188,12 +188,12 @@ impl R2Pipe {
     }
 
     /// Creates a new R2PipeSpawn.
-    pub fn spawn<T: AsRef<str>>(name: T, mut opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
+    pub fn spawn<T: AsRef<str>>(name: T, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
         if name.as_ref() == "" && R2Pipe::in_session().is_some() {
             return R2Pipe::open();
         }
 
-        let R2PipeSpawnOptions { exepath, args } = opts.take().unwrap_or_default();
+        let R2PipeSpawnOptions { exepath, args } = opts.unwrap_or_default();
 
         let path = Path::new(name.as_ref());
         let mut child = Command::new(exepath)
