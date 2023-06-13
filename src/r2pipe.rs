@@ -7,8 +7,8 @@ use crate::{Error, Result};
 
 use std::env;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::{self, prelude::*};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::path::Path;
 use std::process;
@@ -18,6 +18,7 @@ use std::str;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
+use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
@@ -57,6 +58,7 @@ pub struct R2PipeThread {
 pub struct R2PipeSpawnOptions {
     pub exepath: String,
     pub args: Vec<&'static str>,
+    pub connect_timeout: Duration,
 }
 
 impl Default for R2PipeSpawnOptions {
@@ -66,6 +68,7 @@ impl Default for R2PipeSpawnOptions {
         R2PipeSpawnOptions {
             exepath: exepath.to_string(),
             args: Vec::default(),
+            connect_timeout: Duration::from_secs(10),
         }
     }
 }
@@ -193,7 +196,11 @@ impl R2Pipe {
             return R2Pipe::open();
         }
 
-        let R2PipeSpawnOptions { exepath, args } = opts.unwrap_or_default();
+        let R2PipeSpawnOptions {
+            exepath,
+            args,
+            connect_timeout,
+        } = opts.unwrap_or_default();
 
         let path = Path::new(name.as_ref());
         let mut child = Command::new(exepath)
@@ -210,7 +217,37 @@ impl R2Pipe {
 
         // flush out the initial null byte.
         let mut w = [0; 1];
-        sout.read_exact(&mut w)?;
+
+        // if the computer is busy, it might take a bit for the subprocess to connect to
+        // the pipe and we could get back an UnexpectedEof from the pipe in the `read_exact`
+        // call. This will resolve itself when the subprocess fully starts executing and connects
+        // to the pipe, but we don't want to hang indefinitely, so we should put a deadline on
+        // the connecting read that flushes the initial null byte
+        let deadline = Instant::now() + connect_timeout;
+        while Instant::now() < deadline {
+            match sout.read_exact(&mut w) {
+                Ok(_) => break,
+                Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => match child.try_wait()? {
+                    Some(exit_status) => {
+                        return Err(Error::ProgramExited { exit_status });
+                    }
+                    None => {
+                        // rather than just hammering the read_exact call, sleep for a little while
+                        // before trying again
+                        std::thread::sleep(Duration::from_millis(10));
+                        continue;
+                    }
+                },
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        // There are two options here: either we successfully read the initial null byte
+        // or we exceeded the deadline. If we exceeded the deadline, just return back
+        // `Error::NoSession`.
+        if Instant::now() >= deadline {
+            return Err(Error::NoSession);
+        }
 
         let res = R2PipeSpawn {
             read: BufReader::new(sout),

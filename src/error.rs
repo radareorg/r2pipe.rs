@@ -1,3 +1,4 @@
+use std::process::ExitStatus;
 use std::sync::mpsc::{RecvError, SendError, TryRecvError};
 use std::{io, str};
 use thiserror::Error;
@@ -44,4 +45,8 @@ pub enum Error {
     /// Error loading radare2 shared library.
     #[error("Shared library load error")]
     SharedLibraryLoadError,
+
+    /// radare2 exited unexpectedly
+    #[error("Program exited unexpectedly")]
+    ProgramExited { exit_status: ExitStatus },
 }
