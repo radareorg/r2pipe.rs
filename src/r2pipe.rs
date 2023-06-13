@@ -7,8 +7,8 @@ use crate::{Error, Result};
 
 use std::env;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::{self, prelude::*};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::path::Path;
 use std::process;
@@ -18,6 +18,7 @@ use std::str;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
+use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
@@ -31,7 +32,7 @@ pub struct R2PipeLang {
 pub struct R2PipeSpawn {
     read: BufReader<process::ChildStdout>,
     write: process::ChildStdin,
-    child: Option<process::Child>,
+    child: process::Child,
 }
 
 /// Stores the socket address of the r2 process.
@@ -57,6 +58,7 @@ pub struct R2PipeThread {
 pub struct R2PipeSpawnOptions {
     pub exepath: String,
     pub args: Vec<&'static str>,
+    pub connect_timeout: Duration,
 }
 
 impl Default for R2PipeSpawnOptions {
@@ -66,6 +68,7 @@ impl Default for R2PipeSpawnOptions {
         R2PipeSpawnOptions {
             exepath: exepath.to_string(),
             args: Vec::default(),
+            connect_timeout: Duration::from_secs(10),
         }
     }
 }
@@ -188,12 +191,16 @@ impl R2Pipe {
     }
 
     /// Creates a new R2PipeSpawn.
-    pub fn spawn<T: AsRef<str>>(name: T, mut opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
+    pub fn spawn<T: AsRef<str>>(name: T, opts: Option<R2PipeSpawnOptions>) -> Result<R2Pipe> {
         if name.as_ref() == "" && R2Pipe::in_session().is_some() {
             return R2Pipe::open();
         }
 
-        let R2PipeSpawnOptions { exepath, args } = opts.take().unwrap_or_default();
+        let R2PipeSpawnOptions {
+            exepath,
+            args,
+            connect_timeout,
+        } = opts.unwrap_or_default();
 
         let path = Path::new(name.as_ref());
         let mut child = Command::new(exepath)
@@ -210,12 +217,42 @@ impl R2Pipe {
 
         // flush out the initial null byte.
         let mut w = [0; 1];
-        sout.read_exact(&mut w)?;
+
+        // if the computer is busy, it might take a bit for the subprocess to connect to
+        // the pipe and we could get back an UnexpectedEof from the pipe in the `read_exact`
+        // call. This will resolve itself when the subprocess fully starts executing and connects
+        // to the pipe, but we don't want to hang indefinitely, so we should put a deadline on
+        // the connecting read that flushes the initial null byte
+        let deadline = Instant::now() + connect_timeout;
+        while Instant::now() < deadline {
+            match sout.read_exact(&mut w) {
+                Ok(_) => break,
+                Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => match child.try_wait()? {
+                    Some(exit_status) => {
+                        return Err(Error::ProgramExited { exit_status });
+                    }
+                    None => {
+                        // rather than just hammering the read_exact call, sleep for a little while
+                        // before trying again
+                        std::thread::sleep(Duration::from_millis(10));
+                        continue;
+                    }
+                },
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        // There are two options here: either we successfully read the initial null byte
+        // or we exceeded the deadline. If we exceeded the deadline, just return back
+        // `Error::NoSession`.
+        if Instant::now() >= deadline {
+            return Err(Error::NoSession);
+        }
 
         let res = R2PipeSpawn {
             read: BufReader::new(sout),
             write: sin,
-            child: Some(child),
+            child,
         };
 
         Ok(R2Pipe(Box::new(res)))
@@ -305,25 +342,28 @@ impl Pipe for R2PipeSpawn {
         self.write.write_all(cmd.as_bytes())?;
 
         let mut res: Vec<u8> = Vec::new();
-        self.read.read_until(0u8, &mut res)?;
+        match self.read.read_until(0u8, &mut res) {
+            Err(err) if err.kind() == io::ErrorKind::UnexpectedEof => {
+                match self.child.try_wait()? {
+                    Some(exit_status) => {
+                        return Err(Error::ProgramExited { exit_status });
+                    }
+                    None => {
+                        return Err(err.into());
+                    }
+                }
+            }
+            Err(err) => {
+                return Err(err.into());
+            }
+            Ok(_) => {}
+        }
         process_result(res)
     }
 
     fn close(&mut self) {
         let _ = self.cmd("q!");
-        if let Some(child) = &mut self.child {
-            let _ = child.wait();
-        }
-    }
-}
-
-impl R2PipeSpawn {
-    /// Attempts to take the pipes underlying child process handle.
-    /// On success the handle is returned.
-    /// If `None` is returned the child handle was already taken previously.
-    /// By using this method you take over the responsibility to `wait()` the child process in order to free all of it's resources.
-    pub fn take_child(&mut self) -> Option<process::Child> {
-        self.child.take()
+        let _ = self.child.wait();
     }
 }
 
