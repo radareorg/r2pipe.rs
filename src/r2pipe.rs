@@ -31,7 +31,7 @@ pub struct R2PipeLang {
 pub struct R2PipeSpawn {
     read: BufReader<process::ChildStdout>,
     write: process::ChildStdin,
-    child: Option<process::Child>,
+    child: process::Child,
 }
 
 /// Stores the socket address of the r2 process.
@@ -215,7 +215,7 @@ impl R2Pipe {
         let res = R2PipeSpawn {
             read: BufReader::new(sout),
             write: sin,
-            child: Some(child),
+            child,
         };
 
         Ok(R2Pipe(Box::new(res)))
@@ -311,19 +311,7 @@ impl Pipe for R2PipeSpawn {
 
     fn close(&mut self) {
         let _ = self.cmd("q!");
-        if let Some(child) = &mut self.child {
-            let _ = child.wait();
-        }
-    }
-}
-
-impl R2PipeSpawn {
-    /// Attempts to take the pipes underlying child process handle.
-    /// On success the handle is returned.
-    /// If `None` is returned the child handle was already taken previously.
-    /// By using this method you take over the responsibility to `wait()` the child process in order to free all of it's resources.
-    pub fn take_child(&mut self) -> Option<process::Child> {
-        self.child.take()
+        let _ = self.child.wait();
     }
 }
 
