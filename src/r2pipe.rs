@@ -342,7 +342,22 @@ impl Pipe for R2PipeSpawn {
         self.write.write_all(cmd.as_bytes())?;
 
         let mut res: Vec<u8> = Vec::new();
-        self.read.read_until(0u8, &mut res)?;
+        match self.read.read_until(0u8, &mut res) {
+            Err(err) if err.kind() == io::ErrorKind::UnexpectedEof => {
+                match self.child.try_wait()? {
+                    Some(exit_status) => {
+                        return Err(Error::ProgramExited { exit_status });
+                    }
+                    None => {
+                        return Err(err.into());
+                    }
+                }
+            }
+            Err(err) => {
+                return Err(err.into());
+            }
+            Ok(_) => {}
+        }
         process_result(res)
     }
 
