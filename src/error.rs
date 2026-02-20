@@ -42,6 +42,6 @@ pub enum Error {
     ChannelSendError(#[from] SendError<String>),
 
     /// Error loading radare2 shared library.
-    #[error("Shared library load error")]
-    SharedLibraryLoadError,
+    #[error("Shared library error: {0}")]
+    SharedLibraryError(#[from] libloading::Error),
 }

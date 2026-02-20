@@ -50,7 +50,7 @@
 //! The crate offers various methods to interact with r2pipe, eg. via process (multi-threadable), http or tcp.
 //! Check the examples/ dir for more complete examples.
 
-#![cfg_attr(doc_cfg, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(html_root_url = "https://radare.github.io/r2pipe.rs/")]
 
 #[macro_use]

@@ -384,24 +384,23 @@ impl R2PipeNative {
         let r_core_cmd_str_handle = unsafe { lib.load_sym("r_core_cmd_str")? };
         let r_core = r_core_new();
         if r_core.is_null() {
-            Err(Error::SharedLibraryLoadError)
-        } else {
-            let mut ret = R2PipeNative {
-                lib,
-                r_core: std::sync::Mutex::new(r_core),
-                r_core_cmd_str_handle,
-            };
-            ret.cmd(&format!("o {}", file))?;
-            Ok(ret)
+            return Err(Error::EmptyResponse);
         }
+        let mut ret = R2PipeNative {
+            lib,
+            r_core: std::sync::Mutex::new(r_core),
+            r_core_cmd_str_handle,
+        };
+        ret.cmd(&format!("o {}", file))?;
+        Ok(ret)
     }
 }
 
 impl Pipe for R2PipeNative {
     fn cmd(&mut self, cmd: &str) -> Result<String> {
         let r_core = *self.r_core.lock().unwrap();
-        let cmd = dlfcn::to_cstr(cmd)?;
-        let res = (self.r_core_cmd_str_handle)(r_core, cmd);
+        let cmd = std::ffi::CString::new(cmd).map_err(|_| Error::ArgumentMismatch)?;
+        let res = (self.r_core_cmd_str_handle)(r_core, cmd.as_ptr());
         if res.is_null() {
             Err(Error::EmptyResponse)
         } else {
