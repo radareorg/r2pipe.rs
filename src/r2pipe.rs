@@ -424,9 +424,11 @@ impl Drop for R2PipeNative {
 mod test {
     use super::Pipe;
     use super::R2PipeNative;
+    #[cfg(not(windows))]
     use crate::R2Pipe;
 
     #[test]
+    #[cfg(not(windows))]
     fn spawn_test() {
         let mut pipe = R2Pipe::spawn("/bin/ls", None).unwrap();
         assert_eq!(pipe.cmd("echo test").unwrap(), "test\n");
@@ -434,7 +436,7 @@ mod test {
 
     #[test]
     fn native_test() {
-        let mut r2p = R2PipeNative::open("/bin/ls").unwrap();
+        let mut r2p = R2PipeNative::open("malloc://32").unwrap();
         assert_eq!("a\n", r2p.cmd("echo a").unwrap());
     }
 }

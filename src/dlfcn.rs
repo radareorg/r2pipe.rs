@@ -16,8 +16,35 @@ impl LibHandle {
             ".so"
         };
         let lib_name = format!("{}{}{}", name, ext, end.unwrap_or(""));
-        let lib = unsafe { Library::new(&lib_name) }?;
-        Ok(LibHandle(Mutex::new(lib)))
+
+        // Prepare list of paths to try
+        let mut lib_paths = vec![lib_name.clone()];
+
+        // On Windows, add common radare2 installation paths
+        if cfg!(windows) {
+            // CI installs to C:\radare2\<version>\bin, where version changes
+            // So we need to search for the latest version directory
+            lib_paths.push(format!("C:\\radare2\\bin\\{}", lib_name));
+            // Also try the versioned path pattern from CI
+            if let Ok(entries) = std::fs::read_dir("C:\\radare2") {
+                for entry in entries.flatten() {
+                    if entry.file_type().is_ok_and(|ft| ft.is_dir()) {
+                        let version_path = format!("{}\\bin\\{}", entry.path().display(), lib_name);
+                        lib_paths.push(version_path);
+                    }
+                }
+            }
+        }
+
+        // Try each path until we find one that works
+        for lib_path in &lib_paths {
+            if let Ok(lib) = unsafe { Library::new(lib_path) } {
+                return Ok(LibHandle(Mutex::new(lib)));
+            }
+        }
+
+        // If none worked, return the error from the first attempt
+        Err(unsafe { Library::new(&lib_paths[0]) }.unwrap_err().into())
     }
 
     /// Load a symbol from the library and transmute it to the desired type.
