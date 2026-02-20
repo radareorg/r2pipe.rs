@@ -20,6 +20,9 @@ readme = "README.md"
 # License information
 license = "MIT OR Apache-2.0"
 
+[features]
+docsrs = []
+
 [dependencies]
 libloading = "0.8"
 libc = "0.2"
