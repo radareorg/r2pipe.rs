@@ -22,6 +22,7 @@ license = "MIT OR Apache-2.0"
 
 [features]
 docsrs = []
+http = []
 
 [dependencies]
 libloading = "0.8"

@@ -1,5 +1,8 @@
 name: R2pipe Rust CI
 
+env:
+  R2V: 6.1.0
+
 on:
     push:
         branches:
@@ -10,10 +13,10 @@ on:
 
 jobs:
     build_and_test:
-        name: R2pipe.rs
+        name: R2pipe.rs (Ubuntu)
         runs-on: ubuntu-latest
         steps:
-            - run: wget https://github.com/radareorg/radare2/releases/download/5.8.0/radare2_5.8.0_amd64.deb && sudo dpkg -i radare2*.deb
+            - run: wget https://github.com/radareorg/radare2/releases/download/${{env.R2V}}/radare2_${{env.R2V}}_amd64.deb && sudo dpkg -i radare2*.deb
             - uses: actions/checkout@v2
             - uses: actions-rs/toolchain@v1
               with:
@@ -22,17 +25,36 @@ jobs:
                   override: true
             - run: rustup component add rustfmt clippy
             - uses: actions-rs/cargo@v1
+              name: Building
               with:
                   command: build
                   args: --release --all-features
             - uses: actions-rs/cargo@v1
+              name: Testing
               with:
                   command: test
             - uses: actions-rs/cargo@v1
+              name: Format
               with:
                   command: fmt
                   args: --all -- --check
             - uses: actions-rs/cargo@v1
+              name: Clippy
               with:
                   command: clippy
                   args: -- -D warnings
+
+    build_and_test_windows:
+        name: R2pipe.rs (Windows)
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install radare2
+              run: |
+                  Invoke-WebRequest -Uri "https://github.com/radareorg/radare2/releases/download/${{env.R2V}}/radare2-${{env.R2V}}-w64.zip" -OutFile "radare2.zip"
+                  Expand-Archive -Path "radare2.zip" -DestinationPath "C:\radare2"
+                  $r2path = (Get-ChildItem -Path "C:\radare2" -Directory | Select-Object -First 1).FullName
+                  echo "$r2path\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            - uses: dtolnay/rust-toolchain@stable
+            - run: cargo build --release --all-features
+            - run: cargo test
