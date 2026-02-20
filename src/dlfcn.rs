@@ -28,7 +28,7 @@ impl LibHandle {
             // Also try the versioned path pattern from CI
             if let Ok(entries) = std::fs::read_dir("C:\\radare2") {
                 for entry in entries.flatten() {
-                    if entry.file_type().map_or(false, |ft| ft.is_dir()) {
+                    if entry.file_type().is_ok_and(|ft| ft.is_dir()) {
                         let version_path = format!("{}\\bin\\{}", entry.path().display(), lib_name);
                         lib_paths.push(version_path);
                     }
