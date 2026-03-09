@@ -6,6 +6,31 @@ use std::sync::Mutex;
 pub struct LibHandle(Mutex<Library>);
 
 impl LibHandle {
+    #[cfg(windows)]
+    fn load_library(path: &str) -> std::result::Result<Library, libloading::Error> {
+        use libloading::os::windows::{
+            Library as WindowsLibrary, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
+            LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR,
+        };
+
+        if path.contains('\\') || path.contains('/') {
+            unsafe {
+                WindowsLibrary::load_with_flags(
+                    path,
+                    LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
+                )
+                .map(Into::into)
+            }
+        } else {
+            unsafe { Library::new(path) }
+        }
+    }
+
+    #[cfg(not(windows))]
+    fn load_library(path: &str) -> std::result::Result<Library, libloading::Error> {
+        unsafe { Library::new(path) }
+    }
+
     /// Load a shared library by name with platform-specific extension.
     pub fn new(name: &str, end: Option<&str>) -> Result<LibHandle> {
         let ext = if cfg!(windows) {
@@ -16,8 +41,35 @@ impl LibHandle {
             ".so"
         };
         let lib_name = format!("{}{}{}", name, ext, end.unwrap_or(""));
-        let lib = unsafe { Library::new(&lib_name) }?;
-        Ok(LibHandle(Mutex::new(lib)))
+
+        // Prepare list of paths to try
+        let mut lib_paths = vec![lib_name.clone()];
+
+        // On Windows, add common radare2 installation paths
+        if cfg!(windows) {
+            // CI installs to C:\radare2\<version>\bin, where version changes
+            // So we need to search for the latest version directory
+            lib_paths.push(format!("C:\\radare2\\bin\\{}", lib_name));
+            // Also try the versioned path pattern from CI
+            if let Ok(entries) = std::fs::read_dir("C:\\radare2") {
+                for entry in entries.flatten() {
+                    if entry.file_type().is_ok_and(|ft| ft.is_dir()) {
+                        let version_path = format!("{}\\bin\\{}", entry.path().display(), lib_name);
+                        lib_paths.push(version_path);
+                    }
+                }
+            }
+        }
+
+        // Try each path until we find one that works
+        for lib_path in &lib_paths {
+            if let Ok(lib) = Self::load_library(lib_path) {
+                return Ok(LibHandle(Mutex::new(lib)));
+            }
+        }
+
+        // If none worked, return the error from the first attempt
+        Err(Self::load_library(&lib_paths[0]).unwrap_err().into())
     }
 
     /// Load a symbol from the library and transmute it to the desired type.

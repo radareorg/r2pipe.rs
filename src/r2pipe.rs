@@ -379,7 +379,8 @@ pub struct R2PipeNative {
 
 impl R2PipeNative {
     pub fn open(file: &str) -> Result<R2PipeNative> {
-        let mut lib = dlfcn::LibHandle::new("libr_core", None)?;
+        let lib_name = if cfg!(windows) { "r_core" } else { "libr_core" };
+        let mut lib = dlfcn::LibHandle::new(lib_name, None)?;
         let r_core_new: fn() -> *mut libc::c_void = unsafe { lib.load_sym("r_core_new")? };
         let r_core_cmd_str_handle = unsafe { lib.load_sym("r_core_cmd_str")? };
         let r_core = r_core_new();
@@ -424,9 +425,11 @@ impl Drop for R2PipeNative {
 mod test {
     use super::Pipe;
     use super::R2PipeNative;
+    #[cfg(not(windows))]
     use crate::R2Pipe;
 
     #[test]
+    #[cfg(not(windows))]
     fn spawn_test() {
         let mut pipe = R2Pipe::spawn("/bin/ls", None).unwrap();
         assert_eq!(pipe.cmd("echo test").unwrap(), "test\n");
@@ -434,7 +437,7 @@ mod test {
 
     #[test]
     fn native_test() {
-        let mut r2p = R2PipeNative::open("/bin/ls").unwrap();
+        let mut r2p = R2PipeNative::open("malloc://32").unwrap();
         assert_eq!("a\n", r2p.cmd("echo a").unwrap());
     }
 }
