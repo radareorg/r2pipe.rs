@@ -1,4 +1,4 @@
-![R2pipe Rust CI](https://github.com/radareorg/r2pipe.rs/workflows/R2pipe%20Rust%20CI/badge.svg)
+[![ci](https://github.com/radareorg/r2pipe.rs/actions/workflows/main.yml/badge.svg)](https://github.com/radareorg/r2pipe.rs/actions/workflows/main.yml)
 [![Travis](https://travis-ci.org/radareorg/r2pipe.rs.svg?branch=master)](https://travis-ci.org/radareorg/r2pipe.rs)
 [![Documentation](https://docs.rs/r2pipe/badge.svg)](https://docs.rs/r2pipe)
 [![Cargo](https://img.shields.io/crates/v/r2pipe.svg)](https://crates.io/crates/r2pipe)
